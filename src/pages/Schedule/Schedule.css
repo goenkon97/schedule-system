@@ -1,0 +1,538 @@
+.Schedule {
+  width: 100%;
+}
+
+/* =========================
+   顶部
+========================= */
+
+.scheduleTop {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.scheduleTop h1 {
+  margin: 0;
+}
+
+.scheduleTop p {
+  margin-top: 8px;
+  color: var(--text2);
+}
+
+/* =========================
+   Create Schedule
+========================= */
+
+.createScheduleButton {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  padding: 12px 18px;
+
+  border: none;
+  border-radius: 8px;
+
+  background: var(--primary);
+  color: white;
+
+  font-size: 15px;
+  font-weight: 500;
+
+  cursor: pointer;
+}
+
+.createScheduleButton:hover {
+  background: #1d4ed8;
+}
+
+.createScheduleButton svg {
+  font-size: 20px;
+}
+
+/* =========================
+   Toolbar
+========================= */
+
+.scheduleToolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  margin-top: 28px;
+}
+
+.currentMonth {
+  padding: 11px 20px;
+
+  background: white;
+
+  border: 1px solid var(--border);
+  border-radius: 8px;
+
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.scheduleFilter {
+  width: 240px;
+
+  padding: 11px 14px;
+
+  background: white;
+
+  border: 1px solid var(--border);
+  border-radius: 8px;
+
+  color: var(--text);
+
+  font-size: 14px;
+
+  cursor: pointer;
+}
+
+/* =========================
+   图例
+========================= */
+
+.scheduleLegend {
+  display: flex;
+  align-items: center;
+  gap: 28px;
+
+  margin-top: 18px;
+  padding: 16px 20px;
+
+  background: white;
+
+  border: 1px solid var(--border);
+  border-radius: 12px;
+
+  box-shadow:
+    0 2px 6px rgba(15, 23, 42, 0.04);
+}
+
+.legendItem {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.legendItem strong {
+  display: block;
+
+  font-size: 13px;
+  font-weight: 600;
+
+  color: #374151;
+}
+
+.legendItem div span {
+  display: block;
+
+  margin-top: 2px;
+
+  font-size: 11px;
+
+  color: #9ca3af;
+}
+
+.legendColor {
+  width: 18px;
+  height: 18px;
+
+  border-radius: 5px;
+
+  flex-shrink: 0;
+}
+
+.legendColor.green {
+  background: #8ddcc2;
+}
+
+.legendColor.yellow {
+  background: #ffd36a;
+}
+
+.legendColor.purple {
+  background: #c09af4;
+}
+
+.legendColor.blue {
+  background: #91aff0;
+}
+
+.legendColor.gray {
+  background: #d9dde3;
+}
+
+.legendColor.red {
+  background: #ffb0b0;
+}
+
+/* =========================
+   Calendar
+========================= */
+
+.calendar {
+  margin-top: 22px;
+
+  background: white;
+
+  border: 1px solid var(--border);
+
+  border-radius: 14px;
+
+  overflow: visible;
+
+  box-shadow:
+    0 2px 6px rgba(15, 23, 42, 0.05),
+    0 8px 24px rgba(15, 23, 42, 0.05);
+}
+
+.calendarHeader {
+  display: grid;
+
+  grid-template-columns: repeat(7, 1fr);
+
+  min-height: 48px;
+
+  background: #fafbfc;
+
+  border-bottom: 1px solid var(--border);
+
+  border-radius: 14px 14px 0 0;
+}
+
+.calendarHeader > div {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  font-size: 14px;
+  font-weight: 600;
+
+  color: #374151;
+}
+
+.calendarHeader .weekend {
+  color: #64748b;
+}
+
+.calendarBody {
+  display: grid;
+
+  grid-template-columns: repeat(7, 1fr);
+}
+
+.calendarDay {
+  position: relative;
+
+  min-height: 116px;
+
+  padding: 14px;
+
+  border-right: 1px solid #eef0f3;
+  border-bottom: 1px solid #eef0f3;
+
+  background: white;
+
+  cursor: pointer;
+
+  transition: background 0.15s ease;
+}
+
+.calendarDay:hover {
+  background: #fafcff;
+}
+
+.calendarDay:nth-child(7n) {
+  border-right: none;
+}
+
+.calendarDay.outside {
+  background: #fafbfc;
+
+  color: #cbd5e1;
+
+  cursor: default;
+}
+
+.calendarDay.outside:hover {
+  background: #fafbfc;
+}
+
+.dayNumber {
+  font-size: 15px;
+  font-weight: 500;
+
+  color: #1f2937;
+}
+
+.calendarDay.outside .dayNumber {
+  color: #cbd5e1;
+}
+
+.calendarDay.today {
+  background: #f8fbff;
+}
+
+.calendarDay.today .dayNumber {
+  display: inline-flex;
+
+  align-items: center;
+  justify-content: center;
+
+  width: 30px;
+  height: 30px;
+
+  border-radius: 7px;
+
+  background: #2563eb;
+
+  color: white;
+
+  font-weight: 600;
+}
+
+/* =========================
+   日期排班
+========================= */
+
+.daySchedule {
+  margin-top: 14px;
+}
+
+.shiftDots {
+  display: flex;
+  align-items: center;
+
+  gap: 6px;
+
+  height: 12px;
+}
+
+.scheduleDot {
+  display: inline-block;
+
+  width: 8px;
+  height: 8px;
+
+  border-radius: 50%;
+
+  flex-shrink: 0;
+}
+
+.scheduleDot.morning {
+  background: #34b98c;
+}
+
+.scheduleDot.afternoon {
+  background: #f5b51b;
+}
+
+.scheduleDot.evening {
+  background: #8b5cf6;
+}
+
+.scheduleDot.night {
+  background: #2563eb;
+}
+
+.staffCount {
+  margin-top: 8px;
+
+  font-size: 13px;
+
+  color: #64748b;
+}
+
+.leaveCount {
+  display: flex;
+  align-items: center;
+
+  gap: 7px;
+
+  margin-top: 6px;
+
+  font-size: 13px;
+
+  color: #64748b;
+}
+
+.leaveDot {
+  width: 7px;
+  height: 7px;
+
+  border-radius: 50%;
+
+  background: #ef7777;
+
+  flex-shrink: 0;
+}
+
+/* =========================
+   Tooltip
+========================= */
+
+.scheduleTooltip {
+  position: absolute;
+
+  z-index: 100;
+
+  top: 72px;
+  left: 50%;
+
+  width: 310px;
+
+  transform: translateX(-50%);
+
+  background: white;
+
+  border: 1px solid #e5e7eb;
+
+  border-radius: 12px;
+
+  box-shadow:
+    0 10px 25px rgba(15, 23, 42, 0.12),
+    0 4px 8px rgba(15, 23, 42, 0.06);
+
+  overflow: hidden;
+}
+
+.scheduleTooltip::before {
+  content: "";
+
+  position: absolute;
+
+  top: -7px;
+  left: 50%;
+
+  width: 14px;
+  height: 14px;
+
+  background: white;
+
+  border-left: 1px solid #e5e7eb;
+  border-top: 1px solid #e5e7eb;
+
+  transform: translateX(-50%) rotate(45deg);
+}
+
+.tooltipHeader {
+  position: relative;
+
+  display: flex;
+  justify-content: space-between;
+
+  padding: 16px 18px;
+
+  border-bottom: 1px solid #eef0f3;
+}
+
+.tooltipHeader strong {
+  display: block;
+
+  font-size: 14px;
+
+  color: #1f2937;
+}
+
+.tooltipHeader span {
+  display: block;
+
+  margin-top: 4px;
+
+  font-size: 12px;
+
+  color: #9ca3af;
+}
+
+.tooltipClose {
+  font-size: 20px !important;
+
+  color: #64748b !important;
+}
+
+.tooltipContent {
+  padding: 10px 18px;
+}
+
+.tooltipShift {
+  display: flex;
+  align-items: center;
+
+  gap: 10px;
+
+  padding: 8px 0;
+}
+
+.tooltipColor {
+  width: 17px;
+  height: 17px;
+
+  border-radius: 5px;
+
+  flex-shrink: 0;
+}
+
+.tooltipColor.morning {
+  background: #8ddcc2;
+}
+
+.tooltipColor.afternoon {
+  background: #ffd36a;
+}
+
+.tooltipColor.evening {
+  background: #c09af4;
+}
+
+.tooltipColor.night {
+  background: #91aff0;
+}
+
+.tooltipColor.red {
+  background: #ffb0b0;
+}
+
+.tooltipShift div {
+  flex: 1;
+}
+
+.tooltipShift strong {
+  display: block;
+
+  font-size: 13px;
+
+  color: #374151;
+}
+
+.tooltipShift div span {
+  display: block;
+
+  margin-top: 2px;
+
+  font-size: 11px;
+
+  color: #9ca3af;
+}
+
+.tooltipStaff {
+  font-size: 12px;
+
+  color: #9ca3af;
+}
+
+.tooltipFooter {
+  padding: 12px 18px;
+
+  border-top: 1px solid #eef0f3;
+
+  color: var(--primary);
+
+  font-size: 13px;
+  font-weight: 600;
+}

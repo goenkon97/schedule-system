@@ -1,0 +1,199 @@
+/* =====================================================
+   Settings 页面（选择器都以 .Settings 开头，避免全局冲突）
+===================================================== */
+
+.Settings {
+  width: 100%;
+}
+
+.Settings .pageSubtitle {
+  margin-top: 8px;
+  color: var(--text2);
+  font-size: 14px;
+}
+
+/* 外层卡片：左右两栏 */
+.Settings .settingsCard {
+  display: flex;
+  margin-top: 28px;
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow:
+    0 2px 6px rgba(15, 23, 42, 0.05),
+    0 8px 24px rgba(15, 23, 42, 0.06);
+}
+
+/* ========== 左侧分类 ========== */
+
+.Settings .settingsTabs {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: 220px;
+  flex-shrink: 0;
+  padding: 12px;
+  border-right: 1px solid var(--border);
+}
+
+.Settings .settingsTabs button {
+  text-align: left;
+  padding: 12px 14px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: #374151;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.Settings .settingsTabs button:hover {
+  background: #f3f4f6;
+}
+
+.Settings .settingsTabs button.active {
+  background: #eff6ff;
+  color: var(--primary);
+  font-weight: 600;
+}
+
+/* ========== 右侧内容 ========== */
+
+.Settings .settingsPanel {
+  flex: 1;
+  min-width: 0;          /* 允许 flex 子元素被压缩，否则输入框会撑破卡片 */
+  padding: 24px 28px;
+}
+
+.Settings .settingsPanel h2 {
+  font-size: 18px;
+  color: var(--text);
+  margin-bottom: 20px;
+}
+
+.Settings .field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 18px;
+  flex: 1;
+}
+
+.Settings .field span {
+  font-size: 13px;
+  font-weight: 500;
+  color: #4b5563;
+}
+
+.Settings .field input,
+.Settings .field select {
+  height: 42px;
+  padding: 0 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: #fff;
+  font-size: 14px;
+  color: var(--text);
+  outline: none;
+}
+
+.Settings .field input:focus,
+.Settings .field select:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+}
+
+.Settings .fieldRow {
+  display: flex;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.Settings .fieldRow .field {
+  min-width: 200px;
+}
+
+/* 开关行 */
+.Settings .toggleRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px 0;
+}
+
+.Settings .toggleRow strong {
+  display: block;
+  font-size: 14px;
+  color: var(--text);
+}
+
+.Settings .toggleRow p {
+  margin-top: 4px;
+  font-size: 13px;
+  color: var(--text2);
+}
+
+/* 底部保存 */
+.Settings .settingsFooter {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 16px;
+  margin-top: 16px;
+  padding-top: 20px;
+  border-top: 1px solid var(--border);
+}
+
+.Settings .saveButton {
+  height: 42px;
+  padding: 0 20px;
+  border: none;
+  border-radius: 8px;
+  background: var(--primary);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.Settings .saveButton:hover {
+  background: #1d4ed8;
+}
+
+.Settings .savedHint {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #15803d;
+  font-size: 14px;
+}
+
+.Settings .savedHint svg {
+  font-size: 18px;
+}
+
+.Settings .comingSoon {
+  color: var(--text2);
+  font-size: 14px;
+}
+
+/* 窄屏：左右两栏改成上下排列，分类变成横向可滚动 */
+@media (max-width: 900px) {
+  .Settings .settingsCard {
+    flex-direction: column;
+  }
+
+  .Settings .settingsTabs {
+    flex-direction: row;
+    width: 100%;
+    overflow-x: auto;
+    border-right: none;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .Settings .settingsTabs button {
+    white-space: nowrap;
+  }
+}

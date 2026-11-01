@@ -1,0 +1,377 @@
+.createScheduleDialog {
+    background: #ffffff;
+}
+
+
+/* =========================
+   Header
+========================= */
+
+.dialogHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+
+    padding: 28px 32px 22px;
+
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.dialogHeader h2 {
+    margin: 0;
+
+    color: #111827;
+
+    font-size: 22px;
+    font-weight: 700;
+}
+
+.dialogHeader p {
+    margin: 7px 0 0;
+
+    color: #8c96a0;
+
+    font-size: 14px;
+}
+
+.dialogCloseButton {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    width: 36px;
+    height: 36px;
+
+    border: none;
+    border-radius: 8px;
+
+    background: transparent;
+
+    color: #6b7280;
+
+    cursor: pointer;
+}
+
+.dialogCloseButton:hover {
+    background: #f3f4f6;
+}
+
+
+/* =========================
+   Content
+========================= */
+
+.dialogContent {
+    display: grid;
+
+    grid-template-columns: 1fr 1fr;
+
+    gap: 40px;
+
+    padding: 28px 32px;
+}
+
+.dialogContent h3 {
+    margin: 0;
+
+    color: #111827;
+
+    font-size: 16px;
+    font-weight: 650;
+}
+
+.sectionDescription {
+    margin: 7px 0 18px;
+
+    color: #8c96a0;
+
+    font-size: 13px;
+    line-height: 1.5;
+}
+
+
+/* =========================
+   Search
+========================= */
+
+.employeeSearch {
+    width: 100%;
+
+    padding: 11px 13px;
+
+    box-sizing: border-box;
+
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+
+    outline: none;
+
+    font-size: 14px;
+}
+
+.employeeSearch:focus {
+    border-color: #2563eb;
+
+    box-shadow:
+        0 0 0 3px rgba(37, 99, 235, 0.08);
+}
+
+
+/* =========================
+   Employee List
+========================= */
+
+.employeeList {
+    margin-top: 12px;
+
+    max-height: 280px;
+
+    overflow-y: auto;
+
+    border: 1px solid #e5e7eb;
+
+    border-radius: 10px;
+}
+
+.employeeItem {
+    display: flex;
+    align-items: center;
+
+    gap: 12px;
+
+    padding: 12px 14px;
+
+    border-bottom: 1px solid #f0f1f3;
+
+    cursor: pointer;
+}
+
+.employeeItem:last-child {
+    border-bottom: none;
+}
+
+.employeeItem:hover {
+    background: #f8fafc;
+}
+
+.employeeItem input {
+    width: 16px;
+    height: 16px;
+
+    cursor: pointer;
+}
+
+
+/* =========================
+   Avatar
+========================= */
+
+.employeeAvatar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    width: 36px;
+    height: 36px;
+
+    flex-shrink: 0;
+
+    border-radius: 50%;
+
+    background: #e8f0ff;
+
+    color: #2563eb;
+
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.employeeInfo {
+    display: flex;
+    flex-direction: column;
+
+    gap: 3px;
+}
+
+.employeeInfo strong {
+    color: #111827;
+
+    font-size: 14px;
+}
+
+.employeeInfo span {
+    color: #9ca3af;
+
+    font-size: 12px;
+}
+
+
+/* =========================
+   Month
+========================= */
+
+.inputLabel {
+    display: block;
+
+    margin-bottom: 8px;
+
+    color: #374151;
+
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.monthInput {
+    width: 100%;
+
+    padding: 11px 13px;
+
+    box-sizing: border-box;
+
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+
+    outline: none;
+
+    color: #111827;
+
+    font-size: 14px;
+}
+
+.monthInput:focus {
+    border-color: #2563eb;
+
+    box-shadow:
+        0 0 0 3px rgba(37, 99, 235, 0.08);
+}
+
+
+/* =========================
+   Notice
+========================= */
+
+.scheduleNotice {
+    display: flex;
+
+    gap: 12px;
+
+    margin-top: 24px;
+
+    padding: 16px;
+
+    border: 1px solid #f3d58a;
+
+    border-radius: 10px;
+
+    background: #fffaf0;
+}
+
+.noticeIcon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    width: 22px;
+    height: 22px;
+
+    flex-shrink: 0;
+
+    border-radius: 50%;
+
+    background: #f59e0b;
+
+    color: #ffffff;
+
+    font-size: 13px;
+    font-weight: 700;
+}
+
+.noticeContent strong {
+    display: block;
+
+    margin-bottom: 8px;
+
+    color: #92400e;
+
+    font-size: 14px;
+}
+
+.scheduleNotice ul {
+    margin: 0;
+
+    padding-left: 18px;
+
+    color: #78350f;
+
+    font-size: 12px;
+
+    line-height: 1.8;
+}
+
+
+/* =========================
+   Footer
+========================= */
+
+.dialogFooter {
+    display: flex;
+
+    justify-content: flex-end;
+
+    gap: 12px;
+
+    padding: 18px 32px;
+
+    border-top: 1px solid #e5e7eb;
+}
+
+.cancelButton,
+.generateButton {
+    padding: 10px 20px;
+
+    border-radius: 8px;
+
+    font-size: 14px;
+    font-weight: 600;
+
+    cursor: pointer;
+}
+
+.cancelButton {
+    border: 1px solid #e5e7eb;
+
+    background: #ffffff;
+
+    color: #374151;
+}
+
+.cancelButton:hover {
+    background: #f8fafc;
+}
+
+.generateButton {
+    border: 1px solid #2563eb;
+
+    background: #2563eb;
+
+    color: #ffffff;
+}
+
+.generateButton:hover {
+    background: #1d4ed8;
+}
+
+
+/* =========================
+   Responsive
+========================= */
+
+@media (max-width: 700px) {
+
+    .dialogContent {
+        grid-template-columns: 1fr;
+
+        gap: 28px;
+    }
+
+}
