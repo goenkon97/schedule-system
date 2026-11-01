@@ -15,11 +15,11 @@
 // 支持的语言代码
 export type Language = "en" | "zh" | "ja";
 
-// 班次类型（和 Schedule 页面里的 Shift.type 保持一致）
-export type ShiftType = "morning" | "afternoon" | "evening" | "night";
+// 班次类型：烤肉店只有白班和晚班（时间和需要人数见 src/data/shifts.ts）
+export type ShiftType = "day" | "evening";
 
 // 部门（mock 数据里用的是英文值，显示时再翻译）
-export type Department = "Kitchen" | "Hall" | "Service";
+export type Department = "Kitchen" | "Hall";   // 厨房 / 服务员（大厅）
 
 // 职位（mock 数据里存英文值，显示时翻译）
 export type Position = "Chef" | "Cook" | "Server" | "Dishwasher" | "Host" | "Manager";
@@ -58,10 +58,8 @@ const en = {
 
   // 班次名称
   shifts: {
-    morning: "Morning",
-    afternoon: "Afternoon",
+    day: "Day",
     evening: "Evening",
-    night: "Night",
   } as Record<ShiftType, string>,
 
   leave: "Leave",
@@ -72,7 +70,6 @@ const en = {
   departments: {
     Kitchen: "Kitchen",
     Hall: "Hall",
-    Service: "Service",
   } as Record<Department, string>,
   allDepartments: "All Departments",
 
@@ -80,6 +77,9 @@ const en = {
   // （因为不同语言里数字的位置不一样）
   staffCount: (n: number) => `${n} staff`,
   leaveCount: (n: number) => `${n} leave`,
+  // 排了几个 / 需要几个；不够时显示缺几人
+  coverage: (assigned: number, required: number) => `${assigned}/${required}`,
+  shortBy: (n: number) => `${n} short`,
 
   dashboard: {
     title: "Dashboard",
@@ -97,6 +97,7 @@ const en = {
     todayOverview: "Today's Schedule Overview",
     employee: "Employee",
     viewFull: "View Full Schedule →",
+    noShiftToday: "No one is scheduled today.",
   },
 
   schedule: {
@@ -107,6 +108,8 @@ const en = {
     weekdays: ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"],
     scheduled: (n: number) => `${n} staff scheduled`,
     viewDetails: "View Details →",
+    shortLegend: "Short-staffed",
+    shortLegendDesc: "Fewer than required",
   },
 
   dialog: {
@@ -121,11 +124,13 @@ const en = {
     monthLabel: "Month",
     rulesTitle: "Default scheduling rules",
     rules: [
-      "Employees will be scheduled as evenly as possible.",
-      "Each employee can work only one shift per day.",
-      "Shifts will not overlap.",
+      "Employees are scheduled as evenly as possible.",
+      "Each employee works at most one shift per day.",
+      "Employees on leave are not scheduled.",
+      "If there aren't enough staff, the slot is left empty.",
       "You can manually adjust the generated schedule afterwards.",
     ],
+    requiredTitle: "Required staff per shift",
     cancel: "Cancel",
     generate: "Generate Schedule",
   },
@@ -209,10 +214,8 @@ const zh: Dictionary = {
   },
 
   shifts: {
-    morning: "早班",
-    afternoon: "中班",
+    day: "白班",
     evening: "晚班",
-    night: "夜班",
   },
 
   leave: "请假",
@@ -221,13 +224,14 @@ const zh: Dictionary = {
 
   departments: {
     Kitchen: "厨房",
-    Hall: "大厅",
-    Service: "服务",
+    Hall: "服务员",
   },
   allDepartments: "全部部门",
 
   staffCount: (n) => `${n} 人`,
   leaveCount: (n) => `${n} 人请假`,
+  coverage: (assigned, required) => `${assigned}/${required}`,
+  shortBy: (n) => `缺 ${n} 人`,
 
   dashboard: {
     title: "仪表盘",
@@ -244,6 +248,7 @@ const zh: Dictionary = {
     todayOverview: "今日排班概览",
     employee: "员工",
     viewFull: "查看完整排班 →",
+    noShiftToday: "今天没有人排班。",
   },
 
   schedule: {
@@ -253,6 +258,8 @@ const zh: Dictionary = {
     weekdays: ["周日", "周一", "周二", "周三", "周四", "周五", "周六"],
     scheduled: (n) => `已排班 ${n} 人`,
     viewDetails: "查看详情 →",
+    shortLegend: "缺人",
+    shortLegendDesc: "少于需要人数",
   },
 
   dialog: {
@@ -267,10 +274,12 @@ const zh: Dictionary = {
     rulesTitle: "默认排班规则",
     rules: [
       "尽量平均地为每位员工排班。",
-      "每位员工每天只上一个班次。",
-      "班次之间不会重叠。",
+      "每位员工每天最多上一个班。",
+      "请假的员工不排班。",
+      "人数不够时，空位保持空着。",
       "生成后可以手动调整排班。",
     ],
+    requiredTitle: "每个班次需要的人数",
     cancel: "取消",
     generate: "生成排班",
   },
@@ -349,10 +358,8 @@ const ja: Dictionary = {
   },
 
   shifts: {
-    morning: "早番",
-    afternoon: "中番",
-    evening: "遅番",
-    night: "夜勤",
+    day: "昼シフト",
+    evening: "夜シフト",
   },
 
   leave: "休暇",
@@ -362,12 +369,13 @@ const ja: Dictionary = {
   departments: {
     Kitchen: "キッチン",
     Hall: "ホール",
-    Service: "サービス",
   },
   allDepartments: "すべての部署",
 
   staffCount: (n) => `${n}名`,
   leaveCount: (n) => `休暇 ${n}名`,
+  coverage: (assigned, required) => `${assigned}/${required}`,
+  shortBy: (n) => `${n}名不足`,
 
   dashboard: {
     title: "ダッシュボード",
@@ -384,6 +392,7 @@ const ja: Dictionary = {
     todayOverview: "本日のシフト概要",
     employee: "従業員",
     viewFull: "シフト表をすべて見る →",
+    noShiftToday: "本日はシフトがありません。",
   },
 
   schedule: {
@@ -393,6 +402,8 @@ const ja: Dictionary = {
     weekdays: ["日", "月", "火", "水", "木", "金", "土"],
     scheduled: (n) => `${n}名が出勤予定`,
     viewDetails: "詳細を見る →",
+    shortLegend: "人手不足",
+    shortLegendDesc: "必要人数に届かない",
   },
 
   dialog: {
@@ -409,9 +420,11 @@ const ja: Dictionary = {
     rules: [
       "できるだけ均等にシフトを割り当てます。",
       "1人1日1シフトまでです。",
-      "シフトが重なることはありません。",
+      "休暇中の従業員は割り当てません。",
+      "人数が足りない場合、その枠は空いたままになります。",
       "作成後に手動で調整できます。",
     ],
+    requiredTitle: "シフトごとの必要人数",
     cancel: "キャンセル",
     generate: "シフトを作成",
   },

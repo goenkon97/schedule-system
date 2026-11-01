@@ -375,3 +375,56 @@
     }
 
 }
+
+/* =========================
+   每个班次需要的人数
+========================= */
+
+.requiredBox {
+    margin-top: 18px;
+    padding: 14px 16px;
+
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+
+    background: #f9fafb;
+}
+
+.requiredBox strong {
+    display: block;
+    margin-bottom: 8px;
+
+    font-size: 13px;
+    color: #111827;
+}
+
+.requiredTable {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+}
+
+.requiredTable th,
+.requiredTable td {
+    padding: 6px 4px;
+    text-align: center;
+    border-top: 1px solid #eef0f3;
+}
+
+.requiredTable th {
+    border-top: none;
+    font-weight: 600;
+    color: #6b7280;
+}
+
+.requiredTable td:first-child {
+    text-align: left;
+    font-weight: 600;
+    color: #374151;
+}
+
+.requiredTable td small {
+    display: block;
+    font-weight: 400;
+    color: #9ca3af;
+}

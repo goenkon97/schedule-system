@@ -99,8 +99,9 @@
 
 .scheduleLegend {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 28px;
+  gap: 14px 28px;
 
   margin-top: 18px;
   padding: 16px 20px;
@@ -148,20 +149,17 @@
   flex-shrink: 0;
 }
 
-.legendColor.green {
-  background: #8ddcc2;
-}
-
-.legendColor.yellow {
+.legendColor.day {
   background: #ffd36a;
 }
 
-.legendColor.purple {
-  background: #c09af4;
+.legendColor.evening {
+  background: #a5b4fc;
 }
 
-.legendColor.blue {
-  background: #91aff0;
+.legendColor.short {
+  background: white;
+  border: 2px solid #ef4444;
 }
 
 .legendColor.gray {
@@ -305,13 +303,36 @@
   margin-top: 14px;
 }
 
-.shiftDots {
+/* 每个班次一行：色点 + 班次名 + 人数 */
+.shiftRow {
   display: flex;
   align-items: center;
-
   gap: 6px;
 
-  height: 12px;
+  margin-top: 6px;
+
+  font-size: 12.5px;
+
+  color: #64748b;
+}
+
+.shiftRowName {
+  flex: 1;
+  min-width: 0;
+
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.shiftRowCount {
+  font-weight: 600;
+  color: #334155;
+}
+
+/* 缺人：数字变红 */
+.shiftRow.isShort .shiftRowCount {
+  color: #dc2626;
 }
 
 .scheduleDot {
@@ -325,28 +346,12 @@
   flex-shrink: 0;
 }
 
-.scheduleDot.morning {
-  background: #34b98c;
-}
-
-.scheduleDot.afternoon {
+.scheduleDot.day {
   background: #f5b51b;
 }
 
 .scheduleDot.evening {
-  background: #8b5cf6;
-}
-
-.scheduleDot.night {
-  background: #2563eb;
-}
-
-.staffCount {
-  margin-top: 8px;
-
-  font-size: 13px;
-
-  color: #64748b;
+  background: #6366f1;
 }
 
 .leaveCount {
@@ -478,20 +483,12 @@
   flex-shrink: 0;
 }
 
-.tooltipColor.morning {
-  background: #8ddcc2;
-}
-
-.tooltipColor.afternoon {
+.tooltipColor.day {
   background: #ffd36a;
 }
 
 .tooltipColor.evening {
-  background: #c09af4;
-}
-
-.tooltipColor.night {
-  background: #91aff0;
+  background: #a5b4fc;
 }
 
 .tooltipColor.red {
@@ -524,6 +521,12 @@
   font-size: 12px;
 
   color: #9ca3af;
+  white-space: nowrap;
+}
+
+.tooltipStaff.isShort {
+  color: #dc2626;
+  font-weight: 600;
 }
 
 .tooltipFooter {

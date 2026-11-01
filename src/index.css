@@ -203,25 +203,6 @@ h5 {
   font-weight: 600;
 }
 
-.shift.morning {
-  background: #e8f8f1;
-  color: #159570;
-}
-
-.shift.afternoon {
-  background: #fff7df;
-  color: #d89400;
-}
-
-.shift.evening {
-  background: #f1eaff;
-  color: #7554d9;
-}
-
-.shift.night {
-  background: #f1edff;
-  color: #6854c7;
-}
 
 .scheduleFooter {
   padding: 18px;
