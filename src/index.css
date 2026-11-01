@@ -1,10 +1,14 @@
+/* 设计令牌：和 src/theme.ts 里的 tokens 一一对应，改的时候两边一起改 */
 :root {
-  --primary: #2563EB;
-  --background: #F8FAFC;
-  --sidebar: #111827;
-  --text: #111827;
-  --text2: #8c96a0;
-  --border: #E5E7EB;
+  --primary: #2563EB;        /* 品牌蓝 */
+  --primary-hover: #1D4ED8;  /* 悬停 */
+  --primary-soft: #EFF6FF;   /* 很浅的蓝背景 */
+  --background: #F5F7FB;     /* 页面底色 */
+  --sidebar: #0F172A;        /* 顶部栏 + 左侧菜单（深海军蓝） */
+  --text: #0F172A;           /* 正文 / 标题 */
+  --text2: #64748B;          /* 次要文字 */
+  --border: #E2E8F0;         /* 边框 */
+  --shadow-card: 0 1px 2px rgba(15, 23, 42, 0.04), 0 8px 24px rgba(15, 23, 42, 0.06);
 }
 
 * {
@@ -22,8 +26,22 @@ body,
 
 body {
   background: var(--background);
-  font-family: Inter, sans-serif;
+  font-family: "Inter", "PingFang SC", "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Noto Sans CJK SC", "Microsoft YaHei", system-ui, sans-serif;
+  color: var(--text);
+  -webkit-font-smoothing: antialiased;   /* Mac 上文字更细腻 */
   overflow: hidden;
+}
+
+/* 原生的按钮、输入框默认不继承字体，统一一下 */
+button,
+input,
+select,
+textarea {
+  font-family: inherit;
+}
+
+h1 {
+  letter-spacing: -0.02em;   /* 大标题字距收紧一点，更精致 */
 }
 
 
@@ -38,7 +56,9 @@ body {
   width: 100%;
   z-index: 1200;
 
-  background: var(--primary) !important;
+  /* 顶部栏和左侧菜单用同一个深色，整体是一个「外壳」，品牌蓝只用在重点上 */
+  background: var(--sidebar) !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
 }
 
 .MuiToolbar-root {
@@ -74,7 +94,7 @@ body {
   background-color: var(--sidebar);
   color: var(--border);
 
-  border-right: 1px solid #1F2937;
+  border-right: 1px solid rgba(255, 255, 255, 0.06);
 }
 
 

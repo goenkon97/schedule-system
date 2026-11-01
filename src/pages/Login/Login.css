@@ -21,7 +21,7 @@
   background:
     radial-gradient(circle at 85% 15%, rgba(255, 255, 255, 0.16), transparent 40%),
     radial-gradient(circle at 10% 90%, rgba(255, 255, 255, 0.10), transparent 45%),
-    linear-gradient(160deg, #2563eb, #1e40af);
+    linear-gradient(155deg, #0f172a 0%, #1e3a8a 55%, #2563eb 100%);
 }
 
 .Login .brandTop {

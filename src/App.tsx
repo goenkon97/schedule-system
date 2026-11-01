@@ -96,39 +96,36 @@ function App() {
                 // 当前路径等于这一项的 path → 选中状态（蓝色背景）
                 selected={pathname === page.path}
                 sx={{
-                  mx: 1,
+                  mx: 1.5,
                   my: 0.5,
-                  borderRadius: '8px',
-
-                  '&.Mui-selected, &.Mui-selected:hover': {
-                    backgroundColor: '#2563EB',
-                  },
+                  borderRadius: '10px',
+                  color: '#94A3B8',                                   // 未选中：柔和的灰蓝色
 
                   '&:hover': {
-                    backgroundColor: '#1F2937',
+                    backgroundColor: 'rgba(255,255,255,0.06)',        // 悬停：很淡的白色
+                    color: '#E2E8F0',
                   },
 
-                  '&:active': {
-                    backgroundColor: '#111827',
+                  // 选中：品牌蓝底 + 白字 + 一点蓝色光晕
+                  '&.Mui-selected, &.Mui-selected:hover': {
+                    backgroundColor: '#2563EB',
+                    color: '#FFFFFF',
+                    boxShadow: '0 6px 16px -6px rgba(37,99,235,.8)',
                   },
                 }}
               >
 
-                <ListItemIcon>
+                {/* ListItemIcon 默认是灰色、最小宽度 56px；改成跟随文字颜色、更紧凑 */}
+                <ListItemIcon sx={{ color: 'inherit', minWidth: 40 }}>
 
-                  <Icon
-                    sx={{
-                      color: '#E5E7EB',
-                    }}
-                  />
+                  {/* color: inherit → 图标跟着文字颜色变（选中时变白） */}
+                  <Icon sx={{ color: 'inherit', fontSize: 21 }} />
 
                 </ListItemIcon>
 
                 <ListItemText
                   primary={page.name}
-                  sx={{
-                    color: '#E5E7EB',
-                  }}
+                  slotProps={{ primary: { sx: { fontSize: 14.5, fontWeight: 600 } } }}
                 />
 
               </ListItemButton>
@@ -170,13 +167,21 @@ function App() {
 
           <Toolbar>
 
-            <Typography
-              variant="h6"
-              component="div"
-              sx={{ flexGrow: 1 }}
-            >
-              {t.appTitle}
-            </Typography>
+            {/* Logo + 系统名：蓝色渐变的小方块里放一个日历图标 */}
+            <Box sx={{ flexGrow: 1, display: 'flex', alignItems: 'center', gap: 1.5 }}>
+              <Box
+                sx={{
+                  width: 34, height: 34, borderRadius: '10px', display: 'grid', placeItems: 'center',
+                  background: 'linear-gradient(135deg, #3B82F6, #1D4ED8)',
+                  boxShadow: '0 4px 12px -4px rgba(37,99,235,.7)',
+                }}
+              >
+                <CalendarMonthIcon sx={{ fontSize: 20, color: '#fff' }} />
+              </Box>
+              <Typography variant="h6" component="div" sx={{ fontSize: 17, fontWeight: 700, letterSpacing: '-0.01em' }}>
+                {t.appTitle}
+              </Typography>
+            </Box>
 
             <LanguageSwitcher />
 
