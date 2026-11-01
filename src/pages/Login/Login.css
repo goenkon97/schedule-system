@@ -1,0 +1,271 @@
+/* =====================================================
+   登录页（全屏两栏）。选择器都以 .Login 开头，避免和其他页面冲突
+===================================================== */
+
+.Login {
+  display: grid;
+  grid-template-columns: minmax(360px, 44%) 1fr;
+  height: 100vh;
+  overflow: auto;              /* index.css 里 body 是 overflow:hidden，这里自己负责滚动 */
+  background: var(--background);
+}
+
+/* ========== 左边品牌区 ========== */
+
+.Login .loginBrand {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 36px 44px;
+  color: #fff;
+  background:
+    radial-gradient(circle at 85% 15%, rgba(255, 255, 255, 0.16), transparent 40%),
+    radial-gradient(circle at 10% 90%, rgba(255, 255, 255, 0.10), transparent 45%),
+    linear-gradient(160deg, #2563eb, #1e40af);
+}
+
+.Login .brandTop {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-weight: 700;
+  font-size: 17px;
+}
+
+.Login .brandLogo {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.18);
+}
+
+.Login .brandMain h1 {
+  color: #fff;
+  font-size: 34px;
+  line-height: 1.25;
+  margin-bottom: 12px;
+}
+
+.Login .brandMain > p {
+  color: rgba(255, 255, 255, 0.82);
+  font-size: 15px;
+  line-height: 1.7;
+  max-width: 420px;
+}
+
+/* 迷你班表插画 */
+.Login .brandCalendar {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 8px;
+  max-width: 420px;
+  margin: 28px 0;
+  padding: 14px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+}
+
+.Login .miniDay {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 0;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.92);
+}
+
+.Login .miniDay small {
+  color: #475569;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.Login .miniDot {
+  width: 70%;
+  height: 7px;
+  border-radius: 4px;
+}
+
+.Login .miniDot.day { background: #f5b51b; }
+.Login .miniDot.evening { background: #6366f1; }
+.Login .miniDot.evening.short { background: #fca5a5; }   /* 一个缺人的格子，增加真实感 */
+
+.Login .brandPoints {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  font-size: 14.5px;
+}
+
+.Login .brandPoints li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: rgba(255, 255, 255, 0.92);
+}
+
+.Login .brandPoints svg {
+  font-size: 20px;
+  padding: 4px;
+  box-sizing: content-box;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.16);
+}
+
+.Login .brandFoot {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+/* ========== 右边表单区 ========== */
+
+.Login .loginPanel {
+  display: flex;
+  flex-direction: column;
+  padding: 24px 32px 40px;
+}
+
+.Login .loginTopBar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.Login .backLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  color: #374151;
+  font-size: 14px;
+  font-weight: 500;
+  text-decoration: none;
+}
+
+.Login .backLink:hover {
+  background: #eef2f7;
+}
+
+.Login .loginCard {
+  width: 100%;
+  max-width: 420px;
+  margin: auto;                 /* 在右边区域里上下左右居中 */
+  padding: 36px 32px 28px;
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  box-shadow:
+    0 2px 6px rgba(15, 23, 42, 0.05),
+    0 16px 40px rgba(15, 23, 42, 0.08);
+}
+
+.Login .loginCard h2 {
+  font-size: 26px;
+  color: var(--text);
+}
+
+.Login .loginSub {
+  margin: 8px 0 24px;
+  color: var(--text2);
+  font-size: 14px;
+}
+
+.Login .loginRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: -4px 0 6px;
+  font-size: 14px;
+}
+
+.Login .loginRow .MuiFormControlLabel-label {
+  font-size: 14px;
+  color: #4b5563;
+}
+
+.Login .textLink {
+  border: none;
+  background: none;
+  color: var(--primary);
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.Login .textLink:hover {
+  text-decoration: underline;
+}
+
+/* 演示账号 */
+.Login .demoBox {
+  margin-top: 24px;
+  padding-top: 18px;
+  border-top: 1px dashed var(--border);
+  text-align: center;
+}
+
+.Login .demoBox > span {
+  font-size: 13px;
+  font-weight: 600;
+  color: #6b7280;
+}
+
+.Login .demoButtons {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin: 12px 0 8px;
+}
+
+.Login .demoButtons button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 10px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: #f9fafb;
+  color: #1f2937;
+  font-size: 14px;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.Login .demoButtons button:hover {
+  border-color: var(--primary);
+  background: #eff6ff;
+}
+
+.Login .demoBox small {
+  font-size: 12px;
+  color: #9ca3af;
+}
+
+/* ========== 窄屏：左边品牌区移到上面，变矮 ========== */
+@media (max-width: 860px) {
+  .Login {
+    grid-template-columns: 1fr;
+    height: auto;
+    min-height: 100vh;
+  }
+
+  .Login .loginBrand {
+    padding: 22px 20px;
+    gap: 12px;
+  }
+
+  .Login .brandMain h1 { font-size: 24px; }
+  .Login .brandCalendar,
+  .Login .brandPoints,
+  .Login .brandFoot { display: none; }   /* 手机上只留标题，先让表单露出来 */
+
+  .Login .loginPanel { padding: 16px; }
+  .Login .loginCard { margin: 16px auto; padding: 28px 20px 22px; }
+}

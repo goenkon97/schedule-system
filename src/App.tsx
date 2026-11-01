@@ -2,8 +2,12 @@ import Dashboard from './pages/Dashboard/Dashboard';
 import Employee from './pages/Employee/Employee';
 import Schedule from './pages/Schedule/Schedule';
 import Settings from './pages/Settings/Settings';
+import Login from './pages/Login/Login';
 
-import { Routes, Route, Link, useLocation } from 'react-router-dom';
+import { Routes, Route, Link, useLocation, useNavigate } from 'react-router-dom';
+
+// 登录状态
+import { useAuth } from './auth/AuthContext';
 
 // 多语言
 import { useLanguage } from './i18n/LanguageContext';
@@ -27,6 +31,8 @@ import HomeIcon from '@mui/icons-material/Home';
 import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
 import BadgeIcon from '@mui/icons-material/Badge';
 import SettingsIcon from '@mui/icons-material/Settings';
+import LogoutIcon from '@mui/icons-material/Logout';
+import Avatar from '@mui/material/Avatar';
 
 function App() {
 
@@ -35,6 +41,10 @@ function App() {
 
   // 当前网址路径（例如 "/employee"），用来高亮左侧菜单里对应的那一项
   const { pathname } = useLocation();
+
+  // 当前登录的用户（没登录是 null）、退出登录的函数；navigate 用来跳转页面
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
 
   // =========================
   // 侧边栏菜单
@@ -135,6 +145,18 @@ function App() {
     </Box>
   );
 
+  // =========================
+  // 登录页：全屏显示，不要顶部栏和左侧菜单
+  // （放在所有 Hook 调用之后再 return，React 要求 Hook 每次渲染的调用顺序一样）
+  // =========================
+  if (pathname === '/login') {
+    return (
+      <Routes>
+        <Route path="/login" element={<Login />} />
+      </Routes>
+    );
+  }
+
   return (
 
     <div>
@@ -158,9 +180,25 @@ function App() {
 
             <LanguageSwitcher />
 
-            <Button color="inherit">
-              {t.login}
-            </Button>
+            {/* 没登录：显示 LOGIN 按钮，点了去登录页；登录了：显示头像、名字、角色和退出按钮 */}
+            {user ? (
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                <Avatar sx={{ width: 32, height: 32, bgcolor: '#ffffff', color: '#1d4ed8', fontSize: 14, fontWeight: 700 }}>
+                  {user.name.charAt(0)}
+                </Avatar>
+                <Box sx={{ lineHeight: 1.2, display: { xs: 'none', sm: 'block' } }}>
+                  <Typography sx={{ fontSize: 14, fontWeight: 600 }}>{user.name}</Typography>
+                  <Typography sx={{ fontSize: 11.5, opacity: 0.8 }}>{t.auth.roles[user.role]}</Typography>
+                </Box>
+                <Button color="inherit" size="small" startIcon={<LogoutIcon />} onClick={logout} sx={{ textTransform: 'none' }}>
+                  {t.auth.logout}
+                </Button>
+              </Box>
+            ) : (
+              <Button color="inherit" onClick={() => navigate('/login')}>
+                {t.login}
+              </Button>
+            )}
 
           </Toolbar>
 

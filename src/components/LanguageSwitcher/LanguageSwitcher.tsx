@@ -12,7 +12,8 @@ import { languageLabels, type Language } from "../../i18n/translations";
 // 按钮顺序
 const languages: Language[] = ["en", "zh", "ja"];
 
-export default function LanguageSwitcher() {
+// tone：放在什么颜色的背景上。dark = 蓝色顶部栏（默认，白色按钮）；light = 白色背景（登录页，深色按钮）
+export default function LanguageSwitcher({ tone = "dark" }: { tone?: "dark" | "light" }) {
 
   // 从全局 Context 拿到当前语言和切换函数
   const { language, setLanguage } = useLanguage();
@@ -29,10 +30,10 @@ export default function LanguageSwitcher() {
       aria-label="language"
       sx={{
         mr: 2,
-        // 蓝色导航栏上用半透明白色的按钮
+        // 蓝色导航栏上用半透明白色的按钮；白色背景上用灰色按钮
         "& .MuiToggleButton-root": {
-          color: "rgba(255,255,255,0.85)",
-          borderColor: "rgba(255,255,255,0.4)",
+          color: tone === "dark" ? "rgba(255,255,255,0.85)" : "#4b5563",
+          borderColor: tone === "dark" ? "rgba(255,255,255,0.4)" : "#d1d5db",
           px: 1.5,
           py: 0.25,
           textTransform: "none",
@@ -40,11 +41,11 @@ export default function LanguageSwitcher() {
         },
         // 选中状态：白底蓝字
         "& .MuiToggleButton-root.Mui-selected": {
-          color: "#1d4ed8",
-          backgroundColor: "#ffffff",
+          color: tone === "dark" ? "#1d4ed8" : "#ffffff",
+          backgroundColor: tone === "dark" ? "#ffffff" : "#2563eb",
         },
         "& .MuiToggleButton-root.Mui-selected:hover": {
-          backgroundColor: "#e5e7eb",
+          backgroundColor: tone === "dark" ? "#e5e7eb" : "#1d4ed8",
         },
       }}
     >
