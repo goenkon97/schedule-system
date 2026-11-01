@@ -7,7 +7,7 @@ import { useLanguage } from "../../i18n/LanguageContext";
 // ---------- 业务数据：员工、班次定义、排班记录（都从 src/data 读，页面里不再写死）----------
 import { employees } from "../../data/employees";
 import { shiftDefinitions, shiftTimeLabel, departments } from "../../data/shifts";
-import { generateMonth, mockLeaves, toDateKey } from "../../data/mockSchedule";
+import { scheduleWithLeaves, mockLeaves, toDateKey } from "../../data/mockSchedule";
 
 // ---------- MUI 表格组件 ----------
 import TableContainer from '@mui/material/TableContainer';
@@ -41,7 +41,8 @@ function Dashboard() {
 
   // useMemo：生成一个月的排班要循环很多次，只在第一次渲染时算一遍
   const todayAssignments = useMemo(
-    () => generateMonth(today.getFullYear(), today.getMonth()).filter((a) => a.date === todayKey),
+    // 先排班、再套用请假：今天请假的人不会出现在今日排班里
+    () => scheduleWithLeaves(today.getFullYear(), today.getMonth()).filter((a) => a.date === todayKey),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [todayKey]
   );

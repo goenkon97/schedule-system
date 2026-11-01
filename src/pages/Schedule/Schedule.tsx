@@ -8,7 +8,7 @@ import type { Department } from "../../i18n/translations";
 // 业务数据：班次定义（白班 / 晚班 + 需要人数）、员工、排班记录
 import { shiftDefinitions, shiftTimeLabel, departments, requiredStaff } from "../../data/shifts";
 import { employees } from "../../data/employees";
-import { generateMonth, mockLeaves, toDateKey } from "../../data/mockSchedule";
+import { scheduleWithLeaves, mockLeaves, toDateKey } from "../../data/mockSchedule";
 
 // 从「新建排班」弹窗传回来的数据
 export interface GenerateScheduleData {
@@ -59,7 +59,8 @@ function Schedule() {
   // 月份变了才重新生成
   // ======================================================
 
-  const assignments = useMemo(() => generateMonth(year, month), [year, month]);
+  // 先按规则排好整个月，再把请假那天的班改成休息（所以请假多的日子会显示缺人）
+  const assignments = useMemo(() => scheduleWithLeaves(year, month), [year, month]);
   const leaves = useMemo(() => mockLeaves(year, month), [year, month]);
 
   // 员工 id → 部门，筛选请假时要用

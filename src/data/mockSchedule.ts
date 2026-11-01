@@ -6,12 +6,16 @@
 // 「哪个员工 × 哪一天 × 哪个班」的排班记录，和以后数据库里存的一样。
 // 月历上的人数、首页的今日排班，都是从这些记录统计出来的，所以两个页面的数据一定对得上。
 //
-// 生成方式就是我们定好的自动排班规则：
-//   1. 休假中（status = onLeave）的员工不排
-//   2. 当天请假的员工不排
-//   3. 每人每天最多一个班
-//   4. 尽量平均：本月班数少的人优先
-//   5. 每个部门排满需要的人数就停；人不够就少排（格子会显示缺人）
+// 分两步，和真实店铺的流程一样：
+//
+// 第一步 generateMonth：按自动排班规则先把整个月排出来（这时不看请假）
+//   1. 长期休假中（status = onLeave）的员工不排 —— 这些人整段时间都不在
+//   2. 每人每天最多一个班
+//   3. 尽量平均：本月班数少的人优先
+//   4. 每个部门排满需要的人数就停；人不够就少排（格子会显示缺人）
+//
+// 第二步 applyLeaves：排好以后，谁哪天请假，就把他那天的班删掉（变成休息）
+//   → 那个班次少了一个人，月历上会显示缺人（例如「白班 1/2」变红），由店长手动找人补
 // =====================================================
 
 import { employees } from "./employees";
@@ -58,7 +62,6 @@ export function mockLeaves(year: number, month: number): Leave[] {
 // ---------------------------------------------------
 export function generateMonth(year: number, month: number): Assignment[] {
   const days = new Date(year, month + 1, 0).getDate();
-  const leaves = new Set(mockLeaves(year, month).map((l) => `${l.employeeId}|${l.date}`));
   const countByEmployee = new Map<number, number>();         // 每人本月已排几个班
   const result: Assignment[] = [];
 
@@ -70,14 +73,13 @@ export function generateMonth(year: number, month: number): Assignment[] {
       for (const dept of departments) {
         const candidates = employees
           .filter((e) => e.department === dept)
-          .filter((e) => e.status === "active")              // 规则 1
-          .filter((e) => !leaves.has(`${e.id}|${date}`))     // 规则 2
-          .filter((e) => !workingToday.has(e.id))            // 规则 3
-          // 规则 4：班少的优先；一样多时用日期打乱一下顺序，避免总是同一批人
+          .filter((e) => e.status === "active")              // 规则 1：长期休假中的人不排
+          .filter((e) => !workingToday.has(e.id))            // 规则 2：今天已经有班的不排
+          // 规则 3：班少的优先；一样多时用日期打乱一下顺序，避免总是同一批人
           .sort((a, b) =>
             (countByEmployee.get(a.id) ?? 0) - (countByEmployee.get(b.id) ?? 0) ||
             ((a.id * 31 + day) % 17) - ((b.id * 31 + day) % 17))
-          .slice(0, requiredStaff(shift, dept));             // 规则 5：最多取需要的人数
+          .slice(0, requiredStaff(shift, dept));             // 规则 4：最多取需要的人数
 
         for (const e of candidates) {
           result.push({ employeeId: e.id, date, shift: shift.type, department: dept });
@@ -88,4 +90,19 @@ export function generateMonth(year: number, month: number): Assignment[] {
     }
   }
   return result;
+}
+
+// ---------------------------------------------------
+// 第二步：把请假套用到已经排好的班表上
+// 请假那天他本来的班被删掉（= 那天休息）；没有排班的日子请假，班表不变
+// 以后接后端：审批通过一条请假时，后端在同一个事务里删掉他那天的排班记录
+// ---------------------------------------------------
+export function applyLeaves(assignments: Assignment[], leaves: Leave[]): Assignment[] {
+  const off = new Set(leaves.map((l) => `${l.employeeId}|${l.date}`));   // 「员工|日期」组成的集合，查起来快
+  return assignments.filter((a) => !off.has(`${a.employeeId}|${a.date}`));
+}
+
+// 页面直接用这个：先排班，再套用请假
+export function scheduleWithLeaves(year: number, month: number): Assignment[] {
+  return applyLeaves(generateMonth(year, month), mockLeaves(year, month));
 }

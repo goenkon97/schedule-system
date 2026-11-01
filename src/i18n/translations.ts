@@ -126,9 +126,9 @@ const en = {
     rules: [
       "Employees are scheduled as evenly as possible.",
       "Each employee works at most one shift per day.",
-      "Employees on leave are not scheduled.",
       "If there aren't enough staff, the slot is left empty.",
       "You can manually adjust the generated schedule afterwards.",
+      "Approved leave is applied after the schedule is created: that shift becomes a day off.",
     ],
     requiredTitle: "Required staff per shift",
     cancel: "Cancel",
@@ -275,9 +275,9 @@ const zh: Dictionary = {
     rules: [
       "尽量平均地为每位员工排班。",
       "每位员工每天最多上一个班。",
-      "请假的员工不排班。",
       "人数不够时，空位保持空着。",
       "生成后可以手动调整排班。",
+      "请假在排班之后处理：批准后，他那天的班会改成休息。",
     ],
     requiredTitle: "每个班次需要的人数",
     cancel: "取消",
@@ -420,9 +420,9 @@ const ja: Dictionary = {
     rules: [
       "できるだけ均等にシフトを割り当てます。",
       "1人1日1シフトまでです。",
-      "休暇中の従業員は割り当てません。",
       "人数が足りない場合、その枠は空いたままになります。",
       "作成後に手動で調整できます。",
+      "休暇はシフト作成後に反映され、その日のシフトは休みになります。",
     ],
     requiredTitle: "シフトごとの必要人数",
     cancel: "キャンセル",
