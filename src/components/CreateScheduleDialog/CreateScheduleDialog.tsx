@@ -136,7 +136,8 @@ function CreateScheduleDialog({
       maxWidth={result ? "lg" : "md"}
       fullWidth
       // 纸面本身不滚动，交给里面的内容区滚动 → 标题栏和底部按钮始终可见
-      slotProps={{ paper: { sx: { display: "flex", overflow: "hidden" } } }}
+      // 弹窗离屏幕上下边缘只留 16px（默认 32px），小屏幕上能多放一点内容
+      slotProps={{ paper: { sx: { display: "flex", overflow: "hidden", m: 2, maxHeight: "calc(100% - 32px)" } } }}
     >
       <div className="createScheduleDialog">
 
@@ -189,8 +190,7 @@ function CreateScheduleDialog({
 
               <div className="staffingBox">
                 <strong>{t.dialog.staffingTitle}</strong>
-                <p className="staffingHint">{t.dialog.staffingHint}</p>
-                {/* 规则说明：一共需要几人，就是按「每人每周 4 天全天班」算出来的 */}
+                {/* 规则说明：一共需要几人，就是按「每人每周 4 天全天班」算出来的；兼职不在这里调 */}
                 <p className="staffingRule">{t.dialog.staffingRule}</p>
 
                 {estimates.map((est) => (
@@ -232,15 +232,17 @@ function CreateScheduleDialog({
           <div className="previewContent">
 
             {/* 一句话总结：每天都排满 / 有几天缺人 */}
-            <div className={`previewSummary ${result.shortDayCount ? "isShort" : ""}`}>
-              {result.shortDayCount ? t.dialog.shortDays(result.shortDayCount) : t.dialog.allCovered}
-            </div>
+            <div className="pvTop">
+              <div className={`previewSummary ${result.shortDayCount ? "isShort" : ""}`}>
+                {result.shortDayCount ? t.dialog.shortDays(result.shortDayCount) : t.dialog.allCovered}
+              </div>
 
-            {/* 图例：颜色代表什么 */}
-            <div className="pvLegend">
-              <span><i className="pvDot Kitchen" /> {t.departments.Kitchen}</span>
-              <span><i className="pvDot Hall" /> {t.departments.Hall}</span>
-              <span><i className="pvDot empty" /> {t.schedule.shortLegend}</span>
+              {/* 图例：颜色代表什么 */}
+              <div className="pvLegend">
+                <span><i className="pvDot Kitchen" /> {t.departments.Kitchen}</span>
+                <span><i className="pvDot Hall" /> {t.departments.Hall}</span>
+                <span><i className="pvDot empty" /> {t.schedule.shortLegend}</span>
+              </div>
             </div>
 
             {/* 整月班表：月历的样子，和 Schedule 页面的月历一样从周日开始 */}
