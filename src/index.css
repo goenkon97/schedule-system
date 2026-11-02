@@ -266,7 +266,8 @@ h5 {
 }
 
 .confirmCancel,
-.confirmDanger {
+.confirmDanger,
+.confirmPrimary {
   height: 40px;
   padding: 0 18px;
   border-radius: 10px;
@@ -289,4 +290,15 @@ h5 {
 
 .confirmDanger:hover {
   background: #b91c1c;
+}
+
+/* 普通的「确定」按钮（不是删除这种危险操作时用蓝色） */
+.confirmPrimary {
+  border: none;
+  background: var(--primary);
+  color: #fff;
+}
+
+.confirmPrimary:hover {
+  background: #1d4ed8;
 }

@@ -319,6 +319,11 @@ const en = {
     addedToast: (name: string) => `${name} was added.`,
     updatedToast: (name: string) => `${name} was updated.`,
     deletedToast: (name: string) => `${name} was deleted.`,
+    // 职位选「店长」时的二次确认
+    managerConfirmTitle: (name: string) => `Set ${name}'s position to Store Manager?`,
+    managerConfirmDesc: "The store manager is responsible for schedules and staff management. Please make sure this is correct.",
+    managerConfirmBack: "Go back",
+    managerConfirmOk: "Yes, confirm",
   },
 };
 
@@ -588,6 +593,10 @@ const zh: Dictionary = {
     addedToast: (name) => `已添加 ${name}。`,
     updatedToast: (name) => `已更新 ${name} 的信息。`,
     deletedToast: (name) => `已删除 ${name}。`,
+    managerConfirmTitle: (name) => `${name} 的职位是「店长」，确定吗？`,
+    managerConfirmDesc: "店长负责排班和员工管理，请确认没有选错。",
+    managerConfirmBack: "返回修改",
+    managerConfirmOk: "确定",
   },
 };
 
@@ -855,6 +864,10 @@ const ja: Dictionary = {
     addedToast: (name) => `${name}さんを追加しました。`,
     updatedToast: (name) => `${name}さんの情報を更新しました。`,
     deletedToast: (name) => `${name}さんを削除しました。`,
+    managerConfirmTitle: (name) => `${name}さんの役職を「店長」にしてよろしいですか？`,
+    managerConfirmDesc: "店長はシフト作成と従業員管理を担当します。間違いがないか確認してください。",
+    managerConfirmBack: "戻って修正",
+    managerConfirmOk: "確定",
   },
 };
 

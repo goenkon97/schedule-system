@@ -9,6 +9,8 @@
 // 1. 姓名、电话必填；电话只能是数字和「-」，而且不能和别人重复
 // 2. 职位跟着部门走：厨房 = 主厨 / 厨师 / 洗碗工，服务员 = 服务员 / 接待 / 店长
 // 3. 厨房全部是正社员，选了厨房就不能选兼职
+// 4. 职位是「店长」时，点添加 / 保存后会再弹一个确认框，确认后才真正提交
+//    （店长以后对应管理权限，填错影响很大，所以多确认一次）
 //
 // 这个组件只负责“填表 + 检查”，真正保存（调接口）由父组件 onSubmit 去做
 // =====================================================
@@ -63,6 +65,9 @@ export default function EmployeeFormDialog({ employee, allEmployees, onClose, on
   });
   const [errors, setErrors] = useState<Errors>({});
 
+  // 是否正在显示「职位是店长，确定吗？」确认框
+  const [askManager, setAskManager] = useState(false);
+
   // 改某一个字段，同时清掉这个字段之前的错误提示
   const setField = <K extends keyof EmployeeInput>(key: K, value: EmployeeInput[K]) => {
     setForm((prev) => ({ ...prev, [key]: value }));
@@ -102,6 +107,18 @@ export default function EmployeeFormDialog({ employee, allEmployees, onClose, on
     const e = validate();
     setErrors(e);
     if (Object.keys(e).length > 0) return;     // 有错误就不提交
+
+    // 职位是店长：先不提交，弹确认框，让店长再确认一遍
+    if (form.position === "Manager") {
+      setAskManager(true);
+      return;
+    }
+    submitNow();
+  };
+
+  // 真正提交（去掉姓名、电话前后多余的空格）
+  const submitNow = () => {
+    setAskManager(false);
     onSubmit({ ...form, name: form.name.trim(), phone: form.phone.trim() });
   };
 
@@ -245,6 +262,24 @@ export default function EmployeeFormDialog({ employee, allEmployees, onClose, on
         </div>
 
       </form>
+
+      {/* ===== 职位是店长时的二次确认框 =====
+          弹窗里再开一个弹窗，MUI 会自动把它叠在上面 */}
+      <Dialog open={askManager} onClose={() => setAskManager(false)} maxWidth="xs" fullWidth>
+        <div className="confirmBox">
+          <h3>{t.employee.managerConfirmTitle(form.name.trim())}</h3>
+          <p>{t.employee.managerConfirmDesc}</p>
+          <div className="confirmActions">
+            {/* 返回修改：关掉确认框，回到表单，填的内容都还在 */}
+            <button type="button" className="confirmCancel" onClick={() => setAskManager(false)}>
+              {t.employee.managerConfirmBack}
+            </button>
+            <button type="button" className="confirmPrimary" onClick={submitNow}>
+              {t.employee.managerConfirmOk}
+            </button>
+          </div>
+        </div>
+      </Dialog>
     </Dialog>
   );
 }
