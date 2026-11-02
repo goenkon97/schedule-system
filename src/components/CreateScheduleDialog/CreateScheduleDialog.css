@@ -615,3 +615,21 @@
     align-items: center;
     gap: 6px;
 }
+
+/* 规则说明：每人每周 4 天全天班 */
+.staffingRule {
+    margin: -4px 0 10px;
+    padding: 6px 10px;
+    border-radius: 8px;
+    font-size: 12.5px;
+    font-weight: 600;
+    color: #1e40af;
+    background: var(--primary-soft);
+}
+
+/* 步进器旁边的单位「人 / 天」 */
+.stepperUnit {
+    font-size: 12px;
+    color: var(--text2);
+    white-space: nowrap;
+}

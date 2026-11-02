@@ -184,6 +184,8 @@ function CreateScheduleDialog({
               <div className="staffingBox">
                 <strong>{t.dialog.staffingTitle}</strong>
                 <p className="staffingHint">{t.dialog.staffingHint}</p>
+                {/* 规则说明：一共需要几人，就是按「每人每周 4 天全天班」算出来的 */}
+                <p className="staffingRule">{t.dialog.staffingRule}</p>
 
                 {estimates.map((est) => (
                   <div className="staffingRow" key={est.dept}>
@@ -196,6 +198,8 @@ function CreateScheduleDialog({
                         value={est.perDay}
                         onChange={(v) => setSettings((s) => (est.dept === "Kitchen" ? { ...s, kitchenPerDay: v } : { ...s, hallPerDay: v }))}
                       />
+                      {/* 单位写清楚：这个数字是「每天几人」 */}
+                      <span className="stepperUnit">{t.dialog.perDayUnit}</span>
                       <span className={`staffingBadge ${est.short ? "isShort" : ""}`}>
                         {est.short ? t.dialog.shortOf(est.short) : t.dialog.enough}
                       </span>
