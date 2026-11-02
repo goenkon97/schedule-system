@@ -116,6 +116,7 @@ function EmployeeManager() {
   const [list, setList] = useState<EmployeeData[]>([]);
 
   // 第一次打开页面时“调接口”拿员工列表（以后就是 GET /api/employees）
+  // list() 返回 Promise（以后要等网络）；.then(setList)：拿到结果后放进 state，页面就显示出来
   useEffect(() => {
     employeeApi.list().then(setList);
   }, []);
@@ -158,7 +159,7 @@ function EmployeeManager() {
         .toLowerCase()
         .includes(k)
     );
-  }, [list, keyword, t]);
+  }, [list, keyword, t]);   // 列表、关键字、语言任何一个变了，才重新过滤
 
   // ---------------------------------------------------
   // 分页计算
@@ -176,6 +177,7 @@ function EmployeeManager() {
   const to = start + pageItems.length;
 
   // 高亮某一行 2 秒
+  // （2 秒后如果高亮的还是这一行，就取消高亮；期间又高亮了别的行就不动）
   const flash = (id: number) => {
     setHighlightId(id);
     window.setTimeout(() => setHighlightId((cur) => (cur === id ? null : cur)), 2000);

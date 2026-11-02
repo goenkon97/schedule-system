@@ -14,8 +14,13 @@
 // 布局：弹窗最高 = 屏幕高度；标题栏和底部按钮固定，只有中间内容区在需要时滚动，
 //       这样按钮永远看得见，电脑上一般一屏就能显示完
 //   点「使用这个班表」确认；点「返回修改」回到第 1 步
+//
+// 和父组件（Schedule 页）的关系：
+//   父组件决定「开不开」这个弹窗；弹窗算好班表后，通过 onGenerate 把结果「交还」给父组件，
+//   由父组件保存。弹窗自己不存任何班表数据。
 // =====================================================
 
+// useState：组件自己的状态；useMemo：把计算结果缓存起来，依赖不变就不重新算
 import { useMemo, useState } from "react";
 import Dialog from "@mui/material/Dialog";
 import Alert from "@mui/material/Alert";
@@ -53,6 +58,8 @@ const shortName = (name: string) => {
 const DEPTS: Department[] = ["Kitchen", "Hall"];
 
 // ---------- + − 数字调节器（苹果风格的步进器）----------
+// 一个只在这个文件里用的小组件：显示数字，点 − / + 调用 onChange(新数字)
+// 到了 min / max 时对应的按钮变灰（disabled），不能再减 / 再加
 function Stepper({ value, onChange, min = 1, max = 10 }: {
   value: number; onChange: (v: number) => void; min?: number; max?: number;
 }) {
@@ -83,16 +90,17 @@ function CreateScheduleDialog({
   const { t, locale } = useLanguage();
 
   // ---------- 第 1 步的表单 ----------
-  const [keyword, setKeyword] = useState("");
-  const [excluded, setExcluded] = useState<number[]>([]);
+  const [keyword, setKeyword] = useState("");                 // 左边搜索框里的文字
+  const [excluded, setExcluded] = useState<number[]>([]);    // 被勾选「不参加」的员工 id
   // 选中的月份，格式 "2026-12"；默认选下个月
   const [month, setMonth] = useState(monthKey(months[0].year, months[0].month));
-  const [settings, setSettings] = useState<FullTimeSettings>(DEFAULT_SETTINGS);
+  const [settings, setSettings] = useState<FullTimeSettings>(DEFAULT_SETTINGS);   // 厨房 / 服务员每天几人
 
   // ---------- 第 2 步：算出来的班表（null = 还在第 1 步）----------
   const [result, setResult] = useState<ScheduleResult | null>(null);
 
   // 所有可以参加排班的正社员（不管有没有被排除），左边列表用
+  // useMemo(..., [])：依赖是空数组 → 弹窗打开时算一次，之后不再重算
   const fullTimeStaff = useMemo(() => [...availableFullTime("Kitchen"), ...availableFullTime("Hall")], []);
 
   // 搜索：名字或部门（中英日都能搜到）
@@ -101,6 +109,8 @@ function CreateScheduleDialog({
     (e) => !k || `${e.name} ${e.department} ${t.departments[e.department]}`.toLowerCase().includes(k)
   );
 
+  // 勾选 / 取消勾选：已经在名单里就去掉，不在就加进去
+  // setExcluded(prev => ...)：用「上一次的值」算新值，React 推荐的写法
   const toggle = (id: number) =>
     setExcluded((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
 
@@ -109,6 +119,7 @@ function CreateScheduleDialog({
   const anyShort = estimates.some((e) => e.short > 0);
 
   // "2026-12" → 年、月（月是 1~12）
+  // split("-") → ["2026", "12"]；map(Number) → [2026, 12]；再解构成两个变量
   const [year, monthNum] = month.split("-").map(Number);
   const monthTitle = year && monthNum
     ? new Date(year, monthNum - 1, 1).toLocaleString(locale, { year: "numeric", month: "long" })
@@ -117,16 +128,21 @@ function CreateScheduleDialog({
   // 点「生成排班」：用前端算法算出整月班表，进入第 2 步
   const handleGenerate = () => {
     if (!year || !monthNum) return;
+    // monthNum - 1：算法里的月份和 JS 的 Date 一样从 0 开始（0 = 1 月）
+    // setResult 之后 result 不再是 null → 下面的 JSX 自动切换成第 2 步的预览
     setResult(generateFullTimeSchedule(year, monthNum - 1, settings, excluded));
   };
 
   // 点「使用这个班表」：交给父组件（以后这里会调用后端接口保存）
   const handleConfirm = () => {
     if (!result) return;
+    // ...settings：把 kitchenPerDay、hallPerDay 两个字段展开放进这个对象
     onGenerate({ year, month: monthNum, excludedEmployees: excluded, ...settings, result });
   };
 
   return (
+    // open：一直是打开的（要不要显示由父组件决定渲不渲染这个组件）
+    // onClose：点弹窗外面的灰色区域或按 Esc 时调用
     <Dialog
       open
       onClose={() => onShow(false)}
@@ -150,6 +166,7 @@ function CreateScheduleDialog({
           </button>
         </div>
 
+        {/* result 是 null → 显示第 1 步；有结果 → 显示第 2 步（三元表达式 条件 ? A : B） */}
         {!result ? (
           /* ================= 第 1 步：设置 ================= */
           <div className="dialogContent">
@@ -219,6 +236,7 @@ function CreateScheduleDialog({
                       <small>{t.dialog.needHave(est.need, est.have)}</small>
                     </div>
                     <div className="staffingControl">
+                      {/* 改数字：只改对应部门的那个字段，另一个保持不变（{ ...s, 字段: 新值 }） */}
                       <Stepper
                         value={est.perDay}
                         onChange={(v) => setSettings((s) => (est.dept === "Kitchen" ? { ...s, kitchenPerDay: v } : { ...s, hallPerDay: v }))}
@@ -271,6 +289,7 @@ function CreateScheduleDialog({
               ))}
 
               {/* 1 号前面的空白格：1 号是星期几，前面就空几格 */}
+              {/* Array.from({ length: n }, ...)：生成一个长度为 n 的数组，用来循环画 n 个格子 */}
               {Array.from({ length: result.days[0].weekday }, (_, i) => (
                 <div className="pvCell outside" key={`blank${i}`} />
               ))}
@@ -324,7 +343,8 @@ function CreateScheduleDialog({
           </div>
         )}
 
-        {/* ========== Footer ========== */}
+        {/* ========== Footer：第 1 步是「取消 / 生成」，第 2 步是「返回修改 / 使用这个班表」==========
+            <>...</>：Fragment，把两个按钮包成一组，但不会在页面上多出一层 div */}
         <div className="dialogFooter">
           {!result ? (
             <>

@@ -1,10 +1,41 @@
+// src/App.tsx
+// =====================================================
+// 根组件：整个系统的「外壳」
+//
+// 页面结构：
+// ┌──────────────────────────────────────────────┐
+// │ 顶部栏：Logo · 系统名 · 语言切换 · 用户 · 退出 │
+// ├──────────┬───────────────────────────────────┤
+// │ 左侧菜单  │ 右侧内容：根据网址显示不同页面      │
+// │ 仪表盘    │   /          → Dashboard 首页       │
+// │ 排班      │   /schedule  → Schedule 排班        │
+// │ 员工      │   /employee  → Employee 员工        │
+// │ 设置      │   /settings  → Settings 设置        │
+// └──────────┴───────────────────────────────────┘
+// 登录页（/login）例外：全屏显示，不要顶部栏和菜单。
+//
+// 权限在这里处理了两件事：
+// - 菜单：员工看不到「设置」，「员工」变成「我的信息」
+// - 路由：员工直接输入 /settings 也会被送回首页
+// =====================================================
+
+// ---------- 各个页面组件 ----------
 import Dashboard from './pages/Dashboard/Dashboard';
 import Employee from './pages/Employee/Employee';
 import Schedule from './pages/Schedule/Schedule';
 import Settings from './pages/Settings/Settings';
 import Login from './pages/Login/Login';
 
+// useState：组件自己的「记忆」（值变了页面会重新渲染）
+// useEffect：组件显示出来之后要做的事（这里用来订阅申请数量的变化）
 import { useEffect, useState } from 'react';
+
+// React Router：
+// Routes / Route  → 网址和页面的对应表
+// Link            → 不刷新网页的链接（点了只切换组件）
+// Navigate        → 渲染到它时自动跳转（用来把员工送回首页）
+// useLocation     → 读当前网址（高亮菜单用）
+// useNavigate     → 在代码里跳转页面（点「登录」按钮时用）
 import { Routes, Route, Link, Navigate, useLocation, useNavigate } from 'react-router-dom';
 
 // 员工申请：侧边栏「员工」后面显示店长还没处理的申请数量
@@ -17,12 +48,17 @@ import { useAuth } from './auth/AuthContext';
 import { useLanguage } from './i18n/LanguageContext';
 import LanguageSwitcher from './components/LanguageSwitcher/LanguageSwitcher';
 
+// ---------- MUI 组件（现成的 UI 组件库）----------
+// AppBar：顶部栏；Box：万能的 div（可以直接用 sx 写样式）
+// Toolbar：顶部栏里面那一行；Typography：文字；Button：按钮
 import AppBar from '@mui/material/AppBar';
 import Box from '@mui/material/Box';
 import Toolbar from '@mui/material/Toolbar';
 import Typography from '@mui/material/Typography';
 import Button from '@mui/material/Button';
 
+// Drawer：侧边栏容器；List / ListItem / ListItemButton：菜单列表和每一项
+// ListItemIcon / ListItemText：菜单项里的图标和文字；Divider：分隔线
 import Drawer from '@mui/material/Drawer';
 import List from '@mui/material/List';
 import Divider from '@mui/material/Divider';
@@ -31,6 +67,7 @@ import ListItemButton from '@mui/material/ListItemButton';
 import ListItemIcon from '@mui/material/ListItemIcon';
 import ListItemText from '@mui/material/ListItemText';
 
+// ---------- 图标（每个图标都是一个 React 组件）----------
 import HomeIcon from '@mui/icons-material/Home';
 import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
 import BadgeIcon from '@mui/icons-material/Badge';
@@ -50,14 +87,21 @@ function App() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
 
+  // 是不是店长（user?.role：user 为 null 时不报错，直接得到 undefined）
   const isManager = user?.role === 'manager';
 
   // 未处理申请数：一开始读一次，之后申请一有变化（提交 / 撤回 / 标记）就重新读
+  // useState(pendingRequestCount)：传的是函数本身（没有括号），React 只在第一次渲染时调用它
   const [pendingCount, setPendingCount] = useState(pendingRequestCount);
+  // subscribeRequests 返回「取消订阅」的函数；useEffect 返回它，
+  // 组件消失时 React 会自动调用，避免内存里留着没用的监听
+  // 第二个参数 []：只在第一次显示时订阅一次
   useEffect(() => subscribeRequests(() => setPendingCount(pendingRequestCount())), []);
 
   // =========================
   // 侧边栏菜单
+  // 用数组描述每一项（名字、网址、图标），下面用 map 循环生成，
+  // 以后加一个页面只要在这里加一项
   // =========================
   const arrPages = [
     {
@@ -87,15 +131,18 @@ function App() {
   ].filter((page) => !('managerOnly' in page) || isManager);   // 员工：把店长专用的菜单去掉
 
   // =========================
-  // Drawer 内容
+  // Drawer 内容（侧边栏里的菜单列表）
+  // 先存进一个变量，下面 return 里再放进 <Drawer>
   // =========================
   const DrawerList = (
     <Box sx={{ width: 250 }} role="presentation">
 
       <List>
 
+        {/* 每一项菜单生成一个 ListItem；key 让 React 能分清每一项 */}
         {arrPages.map((page) => {
 
+          // 组件名必须大写开头，JSX 里才能写成 <Icon />，所以先赋给大写变量
           const Icon = page.icon;
 
           return (
@@ -104,6 +151,7 @@ function App() {
               disablePadding
             >
 
+              {/* component={Link}：让这个按钮表现成 React Router 的 Link，点了不刷新网页 */}
               <ListItemButton
                 component={Link}
                 to={page.path}
@@ -182,6 +230,9 @@ function App() {
     );
   }
 
+  // =========================
+  // 其他页面：顶部栏 + 左侧菜单 + 右侧内容
+  // =========================
   return (
 
     <div>
@@ -216,9 +267,11 @@ function App() {
             {/* 没登录：显示 LOGIN 按钮，点了去登录页；登录了：显示头像、名字、角色和退出按钮 */}
             {user ? (
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                {/* 头像：名字的第一个字母 */}
                 <Avatar sx={{ width: 32, height: 32, bgcolor: '#ffffff', color: '#1d4ed8', fontSize: 14, fontWeight: 700 }}>
                   {user.name.charAt(0)}
                 </Avatar>
+                {/* 名字 + 角色；display xs:none → 手机屏幕太窄时隐藏，sm 以上才显示 */}
                 <Box sx={{ lineHeight: 1.2, display: { xs: 'none', sm: 'block' } }}>
                   <Typography sx={{ fontSize: 14, fontWeight: 600 }}>{user.name}</Typography>
                   <Typography sx={{ fontSize: 11.5, opacity: 0.8 }}>{t.auth.roles[user.role]}</Typography>
@@ -264,6 +317,7 @@ function App() {
         ========================= */}
         <div className="contentRight">
 
+          {/* Routes：看当前网址，只渲染匹配的那一个 Route 的 element */}
           <Routes>
 
             <Route

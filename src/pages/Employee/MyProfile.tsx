@@ -59,6 +59,10 @@ export default function MyProfile({ user }: { user: AuthUser }) {
   // 换班只选一天；请假、其他可以选一段日期
   const singleDay = type === "swap";
 
+  // ---------------------------------------------------
+  // 点「发送给店长」：检查日期和备注 → 调接口提交 → 清空表单、刷新下面的列表
+  // return setError(...)：显示错误并直接结束函数（后面的代码不执行）
+  // ---------------------------------------------------
   const handleSubmit = async (ev: FormEvent) => {
     ev.preventDefault();
     const end = singleDay || !endDate ? startDate : endDate;   // 没填结束日期 = 只有一天
@@ -83,6 +87,7 @@ export default function MyProfile({ user }: { user: AuthUser }) {
   };
 
   // 日期显示："2026-12-05" → "12月5日（周六）"（跟着当前语言）
+  // 不直接 new Date("2026-12-05")：那样会按 UTC 解析，在某些时区可能差一天，所以拆开传年月日
   const fmtDate = (s: string) => {
     const [y, m, d] = s.split("-").map(Number);
     return new Date(y, m - 1, d).toLocaleDateString(locale, { month: "short", day: "numeric", weekday: "short" });

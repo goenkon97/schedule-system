@@ -24,6 +24,8 @@ function getInitialLanguage(): Language {
   return "en"; // 默认英文
 }
 
+// children：写在 <LanguageProvider> 和 </LanguageProvider> 中间的东西（这里就是 <App />）
+// ReactNode：TypeScript 类型，意思是「任何能被 React 渲染的东西」
 export function LanguageProvider({ children }: { children: ReactNode }) {
 
   // 当前语言（传函数给 useState：只在第一次渲染时读取 localStorage）
@@ -41,6 +43,9 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
     document.documentElement.lang = localeMap[language];
   }, [language]);
 
+  // 把 value 放进「公共盒子」。
+  // 点语言按钮 → setLanguage("ja") → language 变了 → 这里重新渲染，value 变成日文字典
+  // → 所有用了 useLanguage() 的组件自动重新渲染，页面文字一起变成日文
   return (
     <LanguageContext.Provider
       value={{

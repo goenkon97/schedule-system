@@ -1,3 +1,18 @@
+// src/pages/Dashboard/Dashboard.tsx
+// =====================================================
+// 首页（仪表盘）
+//
+// 页面分三块：
+// 1. 顶部四张统计卡片：员工总数、今日排班、今日请假、加班时长
+// 2. 左下「今日排班概览」：今天谁上班，白班 / 晚班各上不上
+// 3. 右下「通知」：店长看员工发来的申请，员工看自己申请的状态（NoticePanel.tsx）
+//
+// 数据来源：
+// - 今日排班：读排班页保存的同一份班表（scheduleStore），所以两边一定对得上
+// - 员工：data/employees.ts；申请：data/requests.ts
+// - 「较上月 +2」「加班 8 小时」现在还是写死的演示数字，以后由后端统计
+// =====================================================
+
 import { useMemo } from "react";
 import type { ComponentProps } from "react";
 import Card from "../../components/Card/Card";
@@ -52,6 +67,7 @@ function Dashboard() {
   const todayEntry = monthSchedule?.days.find((d) => d.date === todayKey);
 
   // 今天每个人上哪几个班：员工 id → 班次集合（白班 / 晚班）
+  // （用 Set 存班次：同一个人同一个班不会重复；以后用 .has("day") 判断他上不上白班）
   const shiftsByEmployee = useMemo(() => {
     const map = new Map<number, Set<ShiftType>>();
     const add = (id: number, shift: ShiftType) => {
@@ -66,7 +82,7 @@ function Dashboard() {
       todayEntry.partTime.forEach((p) => add(p.employeeId, p.shift)); // 兼职
     }
     return map;
-  }, [todayEntry]);
+  }, [todayEntry]);   // 只有今天的班表变了才重新算
 
   // 休假中的员工
   const leaveToday = employees.filter((e) => e.status === "onLeave").length;
@@ -77,6 +93,7 @@ function Dashboard() {
   const totalEmployees = employees.length;
   const scheduledToday = shiftsByEmployee.size;   // 今天上班的人数（每人只算一次）
 
+  // 每张卡片是一个对象，下面用 map 生成 <Card />（以后加卡片只要在数组里加一项）
   const cards: CardItem[] = [
     {
       id: 1,
@@ -127,6 +144,7 @@ function Dashboard() {
     .sort((a, b) =>
       departments.indexOf(a.department) - departments.indexOf(b.department) ||
       (a.employment === b.employment ? 0 : a.employment === "fullTime" ? -1 : 1))
+    // 最后变成 { 员工, 他今天的班次 } 这种形状，渲染表格时直接用
     .map((e) => ({ employee: e, shifts: shiftsByEmployee.get(e.id)! }));
 
   return (

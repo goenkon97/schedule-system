@@ -23,8 +23,10 @@ import { requestApi, subscribeRequests, type StaffRequest } from "../../data/req
 import { tableSx, avatarSx } from "../../components/DataTable/tableStyles";
 import "./Requests.css";
 
+// 筛选：只看未处理 / 看全部
 type Filter = "pending" | "all";
 
+// onToast：父组件（Employee 页）传进来的函数，调用它就能在页面底部显示提示条
 export default function RequestsPanel({ onToast }: { onToast: (msg: string) => void }) {
   const { t, locale } = useLanguage();
   const [list, setList] = useState<StaffRequest[]>([]);
@@ -37,18 +39,25 @@ export default function RequestsPanel({ onToast }: { onToast: (msg: string) => v
     return subscribeRequests(load);   // 返回“取消订阅”，组件卸载时 React 会自动调用
   }, []);
 
+  // 未处理的条数（显示在筛选按钮上）
   const pendingCount = list.filter((r) => r.status === "pending").length;
+  // 表格里实际显示的：选「未处理」就过滤一下，选「全部」就是整个列表
   const shown = useMemo(() => (filter === "pending" ? list.filter((r) => r.status === "pending") : list), [list, filter]);
 
+  // 点操作按钮：未处理 ↔ 已沟通 来回切换
+  // 不用手动刷新列表：setStatus 会通知订阅者，上面 useEffect 里的 load 会自动重新拿数据
   const toggle = async (r: StaffRequest) => {
     await requestApi.setStatus(r.id, r.status === "pending" ? "done" : "pending");
     onToast(t.requests.markedToast);
   };
 
+  // 日期显示："2026-12-05" → 「12月5日(六)」，跟着当前语言
+  // 不直接 new Date("2026-12-05")：那样会按 UTC 解析，在某些时区可能差一天，所以拆开传年月日
   const fmtDate = (s: string) => {
     const [y, m, d] = s.split("-").map(Number);
     return new Date(y, m - 1, d).toLocaleDateString(locale, { month: "short", day: "numeric", weekday: "short" });
   };
+  // 提交时间：只显示月、日、时、分
   const fmtTime = (iso: string) => new Date(iso).toLocaleString(locale, { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
 
   return (
@@ -79,6 +88,7 @@ export default function RequestsPanel({ onToast }: { onToast: (msg: string) => v
               </TableRow>
             </TableHead>
             <TableBody>
+              {/* 每条申请一行 */}
               {shown.map((r) => {
                 const e = employeeById(r.employeeId);   // 员工可能已经被删了
                 const name = e?.name ?? t.requests.unknownEmployee;

@@ -41,6 +41,8 @@ export interface DayEntry {
 }
 
 // 某个部门这一天上班的人（白班或晚班至少上一个），去重
+// [...s.day, ...s.evening]：把两个数组拼成一个；new Set(...)：去掉重复的 id；
+// 外面的 [...]：再把 Set 变回数组
 export const workingIds = (s: ShiftStaff) => [...new Set([...s.day, ...s.evening])];
 
 // ---------- 一个月的班表 ----------
@@ -56,7 +58,7 @@ export interface MonthSchedule {
   updatedAt: string;       // 最后修改时间（ISO 字符串）
 }
 
-// "2026-12" 这种 key
+// "2026-12" 这种 key；padStart(2, "0")：不足两位前面补 0（3 → "03"）
 export const monthKey = (year: number, month: number) => `${year}-${String(month).padStart(2, "0")}`;
 
 // 从今天往后数 offset 个月（offset = 0 就是这个月），返回 { year, month(1~12) }
@@ -71,6 +73,8 @@ export function monthFromToday(offset: number) {
 export const scheduleName = (year: number, month: number) => `${year}年${month}月 班表`;
 
 // 把排班算法的结果，变成一个月的班表对象
+// note = ""、status = "draft"：参数的默认值，调用时不传就用它
+// MonthSchedule["status"]：取 MonthSchedule 里 status 字段的类型（"draft" | "submitted"）
 export function buildMonthSchedule(
   year: number,
   month: number,
@@ -101,12 +105,19 @@ export function buildMonthSchedule(
 // ---------- 读写（现在是 localStorage，以后换成接口）----------
 const STORAGE_KEY = "schedule-system-schedules";
 
+// 所有月份的班表：{ "2026-11": {...}, "2026-12": {...} }
+// Record<string, MonthSchedule>：key 是字符串、值是 MonthSchedule 的对象
 export type ScheduleMap = Record<string, MonthSchedule>;
 
+// ---------------------------------------------------
+// 读出所有班表（排班页、首页打开时调用）
+// 步骤：读 localStorage → 兼容旧格式 → 第一次打开时放一份演示用的本月班表
+// ---------------------------------------------------
 export function loadSchedules(): ScheduleMap {
   let map: ScheduleMap = {};
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
+    // localStorage 只能存字符串，所以存的时候 JSON.stringify，读的时候 JSON.parse 变回对象
     if (raw) map = JSON.parse(raw) as ScheduleMap;
   } catch {
     map = {};
@@ -168,6 +179,7 @@ function writeServer(map: ScheduleMap) {
   }
 }
 
+// 现在三个函数都是同步的；换成 fetch 后会变成 async（返回 Promise），调用的地方要加 await
 export const mockApi = {
   // 提交一个月的班表（同一个月再提交就覆盖）
   submit(s: MonthSchedule) {
@@ -187,6 +199,7 @@ export const mockApi = {
   },
 };
 
+// 保存所有班表到「本地」（包括草稿）；排班页每次改动后自动调用
 export function saveSchedules(map: ScheduleMap) {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(map));

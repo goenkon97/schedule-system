@@ -93,13 +93,16 @@ export function generateFullTimeSchedule(
   settings: FullTimeSettings,
   excluded: number[] = []
 ): ScheduleResult {
+  // 这个月有几天：new Date(年, 下个月, 0) = 下个月的「第 0 天」= 这个月的最后一天
   const daysInMonth = new Date(year, month + 1, 0).getDate();
 
+  // Map：键值对的「表」，这里是 员工 id → 天数。比普通对象更适合用数字当 key
   const monthCount = new Map<number, number>();   // 每人这个月已经上了几天
   let weekCount = new Map<number, number>();      // 每人这一周已经上了几天（每周一清零）
 
   const days: DayPlan[] = [];
 
+  // 从 1 号到月底，一天一天地排
   for (let day = 1; day <= daysInMonth; day++) {
     const date = new Date(year, month, day);
     const weekday = date.getDay();
@@ -115,22 +118,28 @@ export function generateFullTimeSchedule(
       short: { Kitchen: 0, Hall: 0 },
     };
 
+    // 这一天：先排厨房，再排服务员
     for (const dept of DEPTS) {
-      const need = perDayOf(settings, dept);
+      const need = perDayOf(settings, dept);   // 这个部门今天要几个人
 
       const chosen = availableFullTime(dept, excluded)
         // 规则：每人每周最多 4 天
+        // weekCount.get(id) ?? 0：取这个人本周天数，还没上过班（取到 undefined）就当 0
         .filter((e) => (weekCount.get(e.id) ?? 0) < MAX_DAYS_PER_WEEK)
         // 尽量平均：先比本周天数（避免周末没人可排），再比本月天数；
         // 都一样时用一个和日期有关的数打乱顺序，避免永远是同一批人先上
+        // sort 的比较函数：返回负数 → a 排前面；正数 → b 排前面；0 → 一样
+        // a || b || c：前一个比较结果是 0（打平）时，才看下一个
         .sort(
           (a, b) =>
             (weekCount.get(a.id) ?? 0) - (weekCount.get(b.id) ?? 0) ||
             (monthCount.get(a.id) ?? 0) - (monthCount.get(b.id) ?? 0) ||
             ((a.id * 31 + day) % 17) - ((b.id * 31 + day) % 17)
         )
+        // 排好序后取前 need 个人，就是今天上班的人
         .slice(0, need);
 
+      // 选中的人：记进今天的名单，本周、本月天数各 +1
       for (const e of chosen) {
         plan.staff[dept].push(e.id);
         weekCount.set(e.id, (weekCount.get(e.id) ?? 0) + 1);

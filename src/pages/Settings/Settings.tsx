@@ -6,6 +6,10 @@
 // 目前做好了“通用设置（General）”，其他分类先显示“即将推出”。
 // 表单用“受控组件”写法：每个输入框的值都放在 state 里，
 // 以后点保存时，直接把这个 state 对象发给后端即可。
+//
+// ⚠️ 现状（2026-11）：只有店长能进这个页面（App.tsx 里做了限制）。
+// 里面的内容是早期的占位设计，保存只是 console.log，不会真的生效；
+// 具体放哪些设置（改密码、班次时间、默认人数等）以后再定。
 // =====================================================
 
 import { useEffect, useState } from "react";
@@ -24,6 +28,7 @@ type TabKey =
   | "security"
   | "backup";
 
+// 左边标签的显示顺序
 const tabKeys: TabKey[] = [
   "general",
   "departments",
@@ -44,6 +49,7 @@ const timeZones = [
   { value: "America/Los_Angeles", label: "(UTC-08:00) Los Angeles" },
 ];
 
+// 日期格式的选项
 const dateFormats = ["YYYY-MM-DD", "DD/MM/YYYY", "MM/DD/YYYY"];
 
 // 通用设置的数据结构
@@ -78,6 +84,7 @@ function Settings() {
 
   // 通用的更新函数：update("companyName", "xxx")
   // <K extends keyof GeneralSettings> 保证 key 和 value 的类型对得上
+  // （泛型 K：调用 update("allowSwap", "abc") 会报错，因为 allowSwap 必须是 boolean）
   const update = <K extends keyof GeneralSettings>(key: K, value: GeneralSettings[K]) => {
     setForm((prev) => ({ ...prev, [key]: value }));
   };
@@ -89,6 +96,7 @@ function Settings() {
     return () => clearTimeout(timer); // 组件卸载时清掉定时器
   }, [saved]);
 
+  // 点「保存」：现在只打印到控制台 + 显示「已保存」
   const handleSave = () => {
     // 以后这里换成：fetch("/api/settings", { method: "PUT", body: JSON.stringify(form) })
     console.log("Save settings:", form);
@@ -119,6 +127,7 @@ function Settings() {
         {/* ========== 右边：内容 ========== */}
         <section className="settingsPanel">
 
+          {/* 选的是「通用」→ 显示表单；其他分类 → 显示「即将推出」 */}
           {activeTab === "general" ? (
             <>
               <h2>{t.settings.generalTitle}</h2>

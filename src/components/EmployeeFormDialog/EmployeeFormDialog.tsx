@@ -165,7 +165,8 @@ export default function EmployeeFormDialog({ employee, allEmployees, onClose, on
         {/* ===== 表单内容 ===== */}
         <div className="efBody">
 
-          {/* 姓名 + 电话：一行两个 */}
+          {/* 姓名 + 电话：一行两个
+              用 <label> 把文字和输入框包在一起：点文字也能让输入框获得焦点 */}
           <div className="efRow">
             <label className="efField">
               <span>{t.employee.fieldName} <b>*</b></span>
@@ -194,7 +195,8 @@ export default function EmployeeFormDialog({ employee, allEmployees, onClose, on
             </label>
           </div>
 
-          {/* 部门：两个大按钮（分段选择） */}
+          {/* 部门：两个大按钮（分段选择）
+              type="button"：在 <form> 里的按钮默认是「提交」，必须写成 button 才不会一点就提交表单 */}
           <div className="efField">
             <span>{t.employee.fieldDepartment}</span>
             <div className="efSegment">

@@ -25,9 +25,11 @@ import { shiftDefinitions } from "../../data/shifts";
 import { availableFullTime } from "../../data/fullTimeScheduler";
 import { workingIds, type DayEntry, type MonthSchedule } from "../../data/scheduleStore";
 
+// 取名字首字母作头像："Tom Lee" → "TL"
 const initials = (name: string) => name.split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase();
 
-// 部门 → 这一天数据里对应的字段
+// 部门 → 这一天数据里对应的字段（"Kitchen" → "kitchen"）
+// as "kitchen" | "hall"：告诉 TypeScript 返回值只会是这两个之一，之后 d[field(dept)] 才不会报错
 const field = (dept: Department) => (dept === "Kitchen" ? "kitchen" : "hall") as "kitchen" | "hall";
 
 const DEPTS: Department[] = ["Kitchen", "Hall"];
@@ -49,14 +51,19 @@ export default function DayEditorDialog({
   const { t, locale } = useLanguage();
 
   // 弹窗里改的是副本：点「保存」之前不影响原来的班表
+  // structuredClone：浏览器自带的「深拷贝」，连里面的数组也复制一份，改副本不会动到原数据
+  // useState(() => ...)：传函数，只在弹窗第一次打开时复制一次
   const [day, setDay] = useState<DayEntry>(() => structuredClone(schedule.days[dayIndex]));
 
   // 添加兼职用的两个下拉框
   const [ptId, setPtId] = useState("");
   const [ptShift, setPtShift] = useState<ShiftType>("day");
 
+  // 这一天的日期（Date 的月份从 0 开始，所以 month - 1；dayIndex 从 0 开始，所以 + 1）
   const date = new Date(schedule.year, schedule.month - 1, dayIndex + 1);
+  // 标题，例如「12月5日 星期六」（跟着当前语言格式化）
   const title = date.toLocaleDateString(locale, { month: "long", day: "numeric", weekday: "long" });
+  // 取某个班次的定义（开始、结束时间）；! 表示「一定找得到」
   const timeOf = (s: ShiftType) => shiftDefinitions.find((d) => d.type === s)!;
 
   // ---------- 某人「这一周」上了几天（白班或晚班上了任意一段就算一天）----------
@@ -74,6 +81,12 @@ export default function DayEditorDialog({
   };
 
   // ---------- 正社员：某个部门的某一段班，移除 / 添加 ----------
+  // React 的 state 不能直接改（d.kitchen.day.push(id) 是错的，页面不会更新），
+  // 要造一个「新对象」交给 setDay：
+  //   { ...d,                      复制这一天的其他字段
+  //     [field(dept)]: {           [变量]：用变量的值当 key（kitchen 或 hall）
+  //       ...d[field(dept)],       复制这个部门的另一段班
+  //       [shift]: 新数组 } }      只替换 day 或 evening 这一段
   const removeFull = (dept: Department, shift: ShiftType, id: number) =>
     setDay((d) => ({ ...d, [field(dept)]: { ...d[field(dept)], [shift]: d[field(dept)][shift].filter((x) => x !== id) } }));
 
@@ -83,6 +96,8 @@ export default function DayEditorDialog({
   // ---------- 兼职：移除 / 添加 ----------
   const removePart = (id: number) => setDay((d) => ({ ...d, partTime: d.partTime.filter((p) => p.employeeId !== id) }));
 
+  // 添加兼职：没选人就什么都不做；加完把下拉框清空
+  // Number(ptId)：下拉框的值是字符串，转成数字 id
   const addPart = () => {
     if (!ptId) return;
     setDay((d) => ({ ...d, partTime: [...d.partTime, { employeeId: Number(ptId), shift: ptShift }] }));
@@ -101,6 +116,7 @@ export default function DayEditorDialog({
     <Dialog open onClose={onClose} maxWidth="sm" fullWidth>
       <div className="dayEditor">
 
+        {/* ===== 标题：日期 + 这是哪个月的班表 ===== */}
         <div className="deHeader">
           <div>
             <h2>{title}</h2>
@@ -109,7 +125,9 @@ export default function DayEditorDialog({
           <button className="deClose" onClick={onClose} aria-label={t.dayEditor.close}><CloseIcon /></button>
         </div>
 
+        {/* ===== 内容区（太长时只有这里滚动）===== */}
         <div className="deBody">
+          {/* 员工账号：顶部提示只能看 */}
           {!canEdit && <Alert severity="info" sx={{ mb: 2 }}>{t.dayEditor.readOnly}</Alert>}
 
           {/* ===== 正社员：每个部门一块，块里分白班、晚班两段 ===== */}
@@ -119,9 +137,10 @@ export default function DayEditorDialog({
                 <h3>{t.departments[dept]} · {t.dayEditor.fullTime}</h3>
               </div>
 
+              {/* 每个部门里再分白班、晚班两段 */}
               {SHIFTS.map((shift) => {
-                const ids = day[field(dept)][shift];
-                const short = need(dept) - ids.length;
+                const ids = day[field(dept)][shift];       // 这一段已经排的人
+                const short = need(dept) - ids.length;     // 还缺几人（负数或 0 表示够了）
                 const s = timeOf(shift);
                 // 还能加进这一段的正社员：这个部门、在职、这一段还没排
                 const candidates = availableFullTime(dept).filter((e) => !ids.includes(e.id));
@@ -149,6 +168,8 @@ export default function DayEditorDialog({
                         );
                       })}
 
+                      {/* 添加下拉框：value 永远是 ""，选了一个人就马上加进去，下拉框又回到「+ 添加…」
+                          选项后面显示这个人本周已经上了几天，帮店长判断会不会太多 */}
                       {canEdit && candidates.length > 0 && (
                         <select
                           className="deSelect inline"
@@ -195,6 +216,7 @@ export default function DayEditorDialog({
               })}
             </div>
 
+            {/* 添加兼职：先选人、再选白班 / 晚班，点「添加」（没选人时按钮是灰的） */}
             {canEdit && (
               <div className="deAddRow">
                 <select className="deSelect" value={ptId} onChange={(ev) => setPtId(ev.target.value)}>
@@ -214,6 +236,8 @@ export default function DayEditorDialog({
           </section>
         </div>
 
+        {/* ===== 底部按钮：店长「取消 / 保存修改」；员工只有「关闭」
+            onSave(day)：把改好的副本交给父组件（排班页），由它写回这个月的班表 ===== */}
         <div className="deFooter">
           {canEdit ? (
             <>

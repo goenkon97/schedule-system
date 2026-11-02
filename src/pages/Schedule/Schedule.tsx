@@ -8,6 +8,13 @@
 // - 备注：店长可以给每个月的班表写备注
 // - 改过之后班表变成「草稿」，店长点「提交班表」把整个月的数据提交到后台（后端完成前先在前端模拟）
 // - 「新建排班」只有店长能用，而且只能选下个月和下下个月
+//
+// 数据怎么流动：
+//   schedules（state，所有月份的班表）
+//     → 一改就自动存进 localStorage（saveSchedules）
+//     → current = schedules["2026-12"]，月历只画 current
+//   弹窗（新建 / 某一天）只负责编辑，改完通过 onGenerate / onSave 把结果交回这里，
+//   由这个页面统一更新 schedules —— 数据只有一个地方管，不会乱
 // =====================================================
 
 import { useEffect, useMemo, useState } from "react";
@@ -53,6 +60,7 @@ export interface GenerateScheduleData extends FullTimeSettings {
 // 部门筛选：全部，或某一个部门
 type DeptFilter = Department | "all";
 
+// 取名字首字母作头像："Tom Lee" → "TL"
 const initials = (name: string) => name.split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase();
 
 // 某个部门这一天：缺几人（白班、晚班里缺得多的那个）
@@ -74,6 +82,7 @@ function Schedule() {
 
   // ---------- 所有月份的班表（现在存在浏览器里，以后从后端拉）----------
   const [schedules, setSchedules] = useState<ScheduleMap>(loadSchedules);
+  // useEffect(做什么, [依赖])：依赖 schedules 每变一次，就执行一次保存 → 一改就存
   useEffect(() => saveSchedules(schedules), [schedules]);   // 一改就存
 
   // 现在看的是第几个月：0 = 当前月，1 = 下个月，2 = 下下个月
@@ -82,10 +91,11 @@ function Schedule() {
   const key = monthKey(year, month);
   const current = schedules[key];                           // 这个月的班表（可能还没有）
 
-  const [showDialog, setDialogOpen] = useState(false);
+  // ---------- 页面上其他的小状态 ----------
+  const [showDialog, setDialogOpen] = useState(false);                 // 「新建排班」弹窗开没开
   const [editingDay, setEditingDay] = useState<number | null>(null);   // 正在看 / 改第几天
-  const [dept, setDept] = useState<DeptFilter>("all");
-  const [toast, setToast] = useState("");
+  const [dept, setDept] = useState<DeptFilter>("all");                 // 部门筛选
+  const [toast, setToast] = useState("");                              // 底部提示条的文字（空 = 不显示）
   const [confirmClear, setConfirmClear] = useState(false);   // 「清除班表」的确认框
 
   // 月份标题：en → "December 2026"，zh / ja → "2026年12月"
@@ -97,6 +107,8 @@ function Schedule() {
   const today = new Date();
 
   // ---------- 修改班表的几个动作（都会把班表变成「草稿」，等店长提交）----------
+  // patch：一个函数，接收旧班表、返回新班表；这里统一把状态改成 draft、更新修改时间
+  // NonNullable<typeof current>：current 的类型去掉 undefined（传进来时一定有班表）
   const updateCurrent = (patch: (s: NonNullable<typeof current>) => NonNullable<typeof current>) =>
     setSchedules((prev) => {
       const s = prev[key];
@@ -105,6 +117,7 @@ function Schedule() {
     });
 
   // 保存某一天的修改
+  // days.map：第 index 天换成新的，其他天原样保留
   const saveDay = (index: number, day: DayEntry) => {
     updateCurrent((s) => ({ ...s, days: s.days.map((d, i) => (i === index ? day : d)) }));
     setEditingDay(null);
@@ -116,6 +129,7 @@ function Schedule() {
   // 提交班表：以后这里换成 fetch("/api/schedules", { method: "POST", body: JSON.stringify(current) })
   const submit = () => {
     if (!current) return;
+    // as const：让 TypeScript 把 "submitted" 当成字面量类型，而不是普通 string
     const payload = { ...current, status: "submitted" as const, updatedAt: new Date().toISOString() };
     console.log("Submit schedule →", payload);              // 提交给后端的就是这个对象
     mockApi.submit(payload);                                 // 模拟接口：存进「后台」
@@ -160,9 +174,11 @@ function Schedule() {
   };
 
   // 弹窗里可以选的两个月（下个月、下下个月），以及哪些已经有班表
+  // [1, 2] → 从今天往后第 1 个月、第 2 个月
   const creatable = [1, 2].map((o) => monthFromToday(o));
   const existingKeys = useMemo(() => Object.keys(schedules), [schedules]);
 
+  // 部门筛选：选「全部」两个都显示，选某个部门只显示那个
   const showKitchen = dept === "all" || dept === "Kitchen";
   const showHall = dept === "all" || dept === "Hall";
 
@@ -212,6 +228,7 @@ function Schedule() {
             <option value="Hall">{t.departments.Hall}</option>
           </select>
 
+          {/* 提交按钮：店长 + 有改过还没提交的草稿 才出现 */}
           {canEdit && current?.status === "draft" && (
             <button className="submitButton" onClick={submit}>
               <CloudUploadOutlinedIcon fontSize="small" />
@@ -233,6 +250,7 @@ function Schedule() {
       {current && (
         <div className="noteBox">
           <span className="noteLabel">{t.schedule.note}</span>
+          {/* 店长：可以直接输入（每打一个字就更新班表、变成草稿）；员工：只显示文字 */}
           {canEdit ? (
             <input
               className="noteInput"
@@ -271,16 +289,18 @@ function Schedule() {
           </div>
         ) : (
           <div className="calendarBody">
+            {/* 1 号前面的空格：1 号是星期几就空几格（周日 = 0 格） */}
             {Array.from({ length: firstWeekday }, (_, i) => (
               <div className="calendarDay outside" key={`empty-${i}`} />
             ))}
 
+            {/* 每一天一个格子：i 是第几天（0 = 1 号） */}
             {current.days.slice(0, daysInMonth).map((d, i) => {
-              const weekday = (firstWeekday + i) % 7;
+              const weekday = (firstWeekday + i) % 7;                // 这一天是星期几
               const kShort = showKitchen ? shortOf(d.kitchen, current.settings.kitchenPerDay) : 0;
               const hShort = showHall ? shortOf(d.hall, current.settings.hallPerDay) : 0;
               const isShort = kShort > 0 || hShort > 0;
-              const isToday = offset === 0 && i + 1 === today.getDate();
+              const isToday = offset === 0 && i + 1 === today.getDate();   // 当前月的今天：格子加蓝框
 
               return (
                 <div
@@ -315,7 +335,9 @@ function Schedule() {
                           </i>
                         );
                       })}
+                      {/* 缺几人就画几个虚线空位 */}
                       {Array.from({ length: Math.max(0, hShort) }, (_, k) => <i className="calDot empty" key={`h${k}`} />)}
+                      {/* 兼职：灰色圆点，鼠标悬停显示名字和白班 / 晚班 */}
                       {d.partTime.map((p) => (
                         <i className="calDot partTime" key={p.employeeId} title={`${employeeName(p.employeeId)} · ${t.shifts[p.shift]}`}>
                           {initials(employeeName(p.employeeId))}
@@ -330,7 +352,8 @@ function Schedule() {
         )}
       </div>
 
-      {/* ================= 弹窗 ================= */}
+      {/* ================= 弹窗 =================
+          {条件 && <组件 />}：条件成立才渲染。关掉时组件整个消失，下次打开是全新的（表单自动清空） */}
       {showDialog && (
         <CreateScheduleDialog
           onShow={setDialogOpen}
@@ -340,6 +363,7 @@ function Schedule() {
         />
       )}
 
+      {/* 某一天的编辑弹窗：editingDay 不是 null（点了某一天）才显示 */}
       {current && editingDay !== null && (
         <DayEditorDialog
           schedule={current}
@@ -370,6 +394,7 @@ function Schedule() {
         </Dialog>
       )}
 
+      {/* 底部的成功提示条：toast 有文字就显示，3.5 秒后自动关闭（!!toast：把字符串变成 true / false） */}
       <Snackbar open={!!toast} autoHideDuration={3500} onClose={() => setToast("")} anchorOrigin={{ vertical: "bottom", horizontal: "center" }}>
         <Alert severity="success" variant="filled" onClose={() => setToast("")}>{toast}</Alert>
       </Snackbar>

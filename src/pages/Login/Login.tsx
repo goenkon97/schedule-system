@@ -15,8 +15,12 @@
 //   - 点演示账号：自动填好店长 / 员工的账号
 // =====================================================
 
+// FormEvent：表单提交事件的类型；useNavigate：登录成功后跳转；Link：「返回首页」链接
 import { useState, type FormEvent } from "react";
 import { useNavigate, Link } from "react-router-dom";
+
+// MUI 表单组件：TextField 输入框、Checkbox 勾选框、FormControlLabel（勾选框 + 文字）、
+// InputAdornment（输入框里面右边的小眼睛位置）、CircularProgress（转圈的加载图标）
 
 import TextField from "@mui/material/TextField";
 import Button from "@mui/material/Button";
@@ -39,6 +43,7 @@ import LanguageSwitcher from "../../components/LanguageSwitcher/LanguageSwitcher
 import "./Login.css";
 
 // 简单的邮箱格式检查：有 @，@ 后面有点
+// 正则表达式：[^\s@]+ = 「一个以上不是空格也不是 @ 的字符」；^ 和 $ = 从头到尾都要符合
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 // 输入框的统一样式：更高、更圆、背景是很浅的灰，聚焦时变白（苹果的输入框就是这种感觉）
@@ -54,7 +59,7 @@ const fieldSx = {
 
 export default function Login() {
   const { t } = useLanguage();
-  const { login } = useAuth();
+  const { login } = useAuth();   // 登录函数来自 AuthProvider（现在是假登录，以后调后端）
   const navigate = useNavigate();
 
   // 表单的值
@@ -69,6 +74,7 @@ export default function Login() {
   const [loading, setLoading] = useState(false);
 
   // 校验：返回是否通过
+  // 把错误放进 next 对象，最后 setErrors 一次；next 是空对象 = 没有错误 = 通过
   const validate = () => {
     const next: { email?: string; password?: string } = {};
     if (!email.trim()) next.email = t.auth.emailRequired;
@@ -78,12 +84,17 @@ export default function Login() {
     return Object.keys(next).length === 0;
   };
 
+  // ---------------------------------------------------
+  // 点「登录」或在输入框里按回车：浏览器触发表单的 submit 事件 → 调用这个函数
+  // 流程：校验 → 按钮转圈 → 等 login 的结果 → 成功回首页 / 失败显示错误
+  // ---------------------------------------------------
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();                // 阻止浏览器默认的「提交后刷新页面」
     setFormError("");
-    if (!validate() || loading) return;
+    if (!validate() || loading) return;   // 没通过校验，或者正在登录中（防止连点），就不继续
 
     setLoading(true);
+    // await：等 login 做完（现在是假装等 0.7 秒，以后是等后端回复）再往下走
     const res = await login(email, password, remember);
     setLoading(false);
 
@@ -141,6 +152,7 @@ export default function Login() {
       </header>
 
       <main className="loginMain">
+        {/* noValidate：关掉浏览器自带的输入检查气泡，用我们自己的错误提示 */}
         <form className="loginCard" onSubmit={handleSubmit} noValidate>
 
           {/* Logo：宽屏时左边品牌区已经有了，这里只在手机上显示 */}
@@ -151,6 +163,8 @@ export default function Login() {
 
           {formError && <Alert severity="error" sx={{ mb: 2, textAlign: "left" }}>{formError}</Alert>}
 
+          {/* 受控输入框：value 来自 state，每打一个字 onChange 就更新 state → 重新渲染显示新值
+              autoComplete：告诉浏览器 / 密码管理器这是用户名，可以自动填 */}
           <TextField
             label={t.auth.email}
             type="email"
@@ -163,6 +177,7 @@ export default function Login() {
             sx={fieldSx}
           />
 
+          {/* 密码框：showPassword 为 true 时 type 变成 text，密码就能看见 */}
           <TextField
             label={t.auth.password}
             type={showPassword ? "text" : "password"}
@@ -173,6 +188,7 @@ export default function Login() {
             error={!!errors.password}
             helperText={errors.password || " "}
             sx={fieldSx}
+            // slotProps.input.endAdornment：在输入框里面的最右边放东西（这里放眼睛按钮）
             slotProps={{
               input: {
                 endAdornment: (

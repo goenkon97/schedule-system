@@ -14,6 +14,7 @@
 // tone 决定这张卡片的主题色（图标底色、图标颜色）。
 // =====================================================
 
+// ElementType：「一个组件」的类型（这里用来接收 MUI 图标组件，例如 GroupsIcon）
 import type { ElementType } from "react";
 import MuiCard from "@mui/material/Card";          // 改名为 MuiCard，避免和我们自己的 Card 重名
 import CardContent from "@mui/material/CardContent";
@@ -50,6 +51,9 @@ interface CardProps {
   trend?: { label: string; direction: "up" | "down"; good: boolean };
 }
 
+// 使用方法（Dashboard.tsx）：<Card title="员工总数" value={24} icon={GroupsIcon} tone="blue" />
+// 参数写成 { title, value, ... }：直接从 props 对象里「解构」出每个字段
+// tone = "blue"：没传 tone 时默认蓝色
 export default function Card({
   title,
   value,
@@ -60,10 +64,13 @@ export default function Card({
   trend,
 }: CardProps) {
 
+  // 取出这张卡片的主题色
   const color = toneColors[tone];
+  // 趋势是「下降」就用向下的箭头图标，否则用向上的
   const TrendIcon = trend?.direction === "down" ? TrendingDownIcon : TrendingUpIcon;
 
   return (
+    // sx：MUI 的样式写法，像写 CSS 一样，但写在组件上，只影响这个组件
     <MuiCard
       elevation={0}           // 不用 MUI 默认的阴影，下面自己写更柔和的
       sx={{
@@ -119,7 +126,8 @@ export default function Card({
           )}
         </Typography>
 
-        {/* ===== 第三行：趋势 + 说明 ===== */}
+        {/* ===== 第三行：趋势 + 说明 =====
+            {条件 && (...)}：条件成立才显示括号里的内容（两个都没有就整行不显示） */}
         {(trend || description) && (
           <Box sx={{ mt: 1.5, display: "flex", alignItems: "center", gap: 1, flexWrap: "wrap" }}>
 

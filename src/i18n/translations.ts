@@ -50,6 +50,13 @@ export const languageLabels: Record<Language, string> = {
 // =====================================================
 // 英文（基准字典）
 // =====================================================
+//
+// 写法说明：
+// - 普通文字直接写字符串：title: "Schedule"
+// - 带数字或名字的句子写成函数：showing: (from, to, total) => `...`
+//   因为不同语言里数字的位置不一样（英文 "3 staff"，日文「3名」）
+// - 有些对象后面写 as Record<某类型, string>：告诉 TypeScript
+//   「这个对象的 key 必须正好是这个类型的所有值」，少一个就报错
 const en = {
   appTitle: "Staff Scheduling System",
   login: "Login",
@@ -88,6 +95,7 @@ const en = {
   coverage: (assigned: number, required: number) => `${assigned}/${required}`,
   shortBy: (n: number) => `${n} short`,
 
+  // 首页（Dashboard）：统计卡片、今日排班概览、通知模块
   dashboard: {
     title: "Dashboard",
     welcome: "Welcome back, Admin! Here's what's happening today.",
@@ -115,6 +123,7 @@ const en = {
     timeAgo: { justNow: "just now", minutes: (n: number) => `${n} min ago`, hours: (n: number) => `${n} h ago`, days: (n: number) => `${n} d ago` },
   },
 
+  // 排班页：月历、状态、提交 / 清除班表
   schedule: {
     title: "Schedule",
     subtitle: "Manage and view staff schedules for the entire month.",
@@ -154,6 +163,7 @@ const en = {
     clickToView: "Click a day to see details",
   },
 
+  // 「新建排班」弹窗（CreateScheduleDialog）：选月份、每天几个正社员、预览
   dialog: {
     title: "Create New Schedule",
     description: "Select employees and month to generate a new schedule.",
@@ -201,6 +211,7 @@ const en = {
     generate: "Generate Schedule",
   },
 
+  // 设置页
   settings: {
     title: "Settings",
     subtitle: "Configure system settings and preferences.",
@@ -230,6 +241,7 @@ const en = {
     comingSoon: "This section is coming soon.",
   },
 
+  // 点某一天打开的人员编辑弹窗（DayEditorDialog）
   dayEditor: {
     fullTime: "Full-time",
     partTime: "Part-time",
@@ -243,6 +255,7 @@ const en = {
     cancel: "Cancel",
     weekDays: (n: number) => `${n} d this week`,
   },
+  // 登录页 + 顶部栏的用户信息 / 退出
   auth: {
     title: "Welcome back",
     subtitle: "Sign in to manage your store's schedule.",
@@ -271,6 +284,7 @@ const en = {
     logout: "Log out",
     roles: { manager: "Store manager", staff: "Staff" } as Record<"manager" | "staff", string>,
   },
+  // 员工页（店长看到的员工列表）+ 添加 / 编辑员工弹窗
   employee: {
     title: "Employee",
     subtitle: "Manage employee information and details.",
@@ -338,6 +352,7 @@ const en = {
     managerConfirmBack: "Go back",
     managerConfirmOk: "Yes, confirm",
   },
+  // 员工申请：员工端「我的信息」页 + 店长端「员工申请」标签
   requests: {
     // 员工端「我的信息」
     myTitle: "My Info",
@@ -392,11 +407,14 @@ const en = {
 };
 
 // 用英文字典自动推导出“字典的形状”
+// typeof en：取出 en 这个对象的类型（有哪些 key、每个 key 是字符串还是函数）
 export type Dictionary = typeof en;
 
 // =====================================================
 // 中文
 // =====================================================
+// 写成 const zh: Dictionary：中文字典必须和英文的结构完全一样
+// （函数参数的类型也会自动从英文版推导出来，所以这里可以不写类型）
 const zh: Dictionary = {
   appTitle: "员工排班系统",
   login: "登录",

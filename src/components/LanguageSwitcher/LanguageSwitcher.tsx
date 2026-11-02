@@ -49,6 +49,7 @@ export default function LanguageSwitcher({ tone = "dark" }: { tone?: "dark" | "l
         },
       }}
     >
+      {/* 三个语言各生成一个按钮；value 是按下后传给 onChange 的值 */}
       {languages.map((lang) => (
         <ToggleButton key={lang} value={lang}>
           {languageLabels[lang]}
