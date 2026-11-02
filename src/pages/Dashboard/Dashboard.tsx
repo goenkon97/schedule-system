@@ -7,7 +7,10 @@ import { useLanguage } from "../../i18n/LanguageContext";
 // ---------- 业务数据：员工、班次定义、排班记录（都从 src/data 读，页面里不再写死）----------
 import { employees } from "../../data/employees";
 import { shiftDefinitions, shiftTimeLabel, departments } from "../../data/shifts";
-import { scheduleWithLeaves, mockLeaves, toDateKey } from "../../data/mockSchedule";
+import { toDateKey } from "../../data/mockSchedule";
+// 班表：直接读排班页保存的同一份数据（以后两边一起换成接口）
+import { loadSchedules, monthFromToday, monthKey } from "../../data/scheduleStore";
+import type { ShiftType } from "../../i18n/translations";
 
 // ---------- MUI 表格组件 ----------
 import TableContainer from '@mui/material/TableContainer';
@@ -33,30 +36,42 @@ function Dashboard() {
   const { t } = useLanguage();
 
   // ---------------------------------------------------
-  // 今天的排班：从「这个月的排班记录」里筛出今天的
-  // 以后换成接口：GET /api/schedules?date=今天
+  // 今天的排班：从排班页保存的「这个月的班表」里，取出今天那一天
+  // 以后换成接口：GET /api/schedules/2026-11 → 取今天
   // ---------------------------------------------------
   const today = new Date();
   const todayKey = toDateKey(today);
+  const { year, month } = monthFromToday(0);
 
-  // useMemo：生成一个月的排班要循环很多次，只在第一次渲染时算一遍
-  const todayAssignments = useMemo(
-    // 先排班、再套用请假：今天请假的人不会出现在今日排班里
-    () => scheduleWithLeaves(today.getFullYear(), today.getMonth()).filter((a) => a.date === todayKey),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [todayKey]
-  );
+  // useMemo：只在第一次渲染时读一次
+  const monthSchedule = useMemo(() => loadSchedules()[monthKey(year, month)], [year, month]);
+  const todayEntry = monthSchedule?.days.find((d) => d.date === todayKey);
 
-  // 今天请假的人数（mock 请假记录里日期是今天的）+ 长期休假中的员工
-  const leaveToday =
-    mockLeaves(today.getFullYear(), today.getMonth()).filter((l) => l.date === todayKey).length +
-    employees.filter((e) => e.status === "onLeave").length;
+  // 今天每个人上哪几个班：员工 id → 班次集合（白班 / 晚班）
+  const shiftsByEmployee = useMemo(() => {
+    const map = new Map<number, Set<ShiftType>>();
+    const add = (id: number, shift: ShiftType) => {
+      if (!map.has(id)) map.set(id, new Set());
+      map.get(id)!.add(shift);
+    };
+    if (todayEntry) {
+      for (const shift of ["day", "evening"] as ShiftType[]) {
+        todayEntry.kitchen[shift].forEach((id) => add(id, shift));   // 厨房正社员
+        todayEntry.hall[shift].forEach((id) => add(id, shift));      // 服务员正社员
+      }
+      todayEntry.partTime.forEach((p) => add(p.employeeId, p.shift)); // 兼职
+    }
+    return map;
+  }, [todayEntry]);
+
+  // 休假中的员工
+  const leaveToday = employees.filter((e) => e.status === "onLeave").length;
 
   // ---------------------------------------------------
   // 顶部四张统计卡片：数字都从数据算出来
   // ---------------------------------------------------
   const totalEmployees = employees.length;
-  const scheduledToday = new Set(todayAssignments.map((a) => a.employeeId)).size;   // 今天上班的人（去重）
+  const scheduledToday = shiftsByEmployee.size;   // 今天上班的人数（每人只算一次）
 
   const cards: CardItem[] = [
     {
@@ -100,15 +115,14 @@ function Dashboard() {
 
   // ---------------------------------------------------
   // 今日排班表的每一行 = 今天有班的一个员工
-  // 先按部门（厨房 → 服务员）、再按上班时间（白班 → 晚班）排序
+  // 排序：厨房 → 服务员；同一部门里正社员在前、兼职在后
   // ---------------------------------------------------
   const rows = employees
-    .map((e) => ({ employee: e, assignment: todayAssignments.find((a) => a.employeeId === e.id) }))
-    .filter((r) => r.assignment)                                       // 只要今天有班的
+    .filter((e) => shiftsByEmployee.has(e.id))
     .sort((a, b) =>
-      departments.indexOf(a.employee.department) - departments.indexOf(b.employee.department) ||
-      shiftDefinitions.findIndex((s) => s.type === a.assignment!.shift) -
-        shiftDefinitions.findIndex((s) => s.type === b.assignment!.shift));
+      departments.indexOf(a.department) - departments.indexOf(b.department) ||
+      (a.employment === b.employment ? 0 : a.employment === "fullTime" ? -1 : 1))
+    .map((e) => ({ employee: e, shifts: shiftsByEmployee.get(e.id)! }));
 
   return (
     <div className="Dashboard">
@@ -155,7 +169,7 @@ function Dashboard() {
             </TableHead>
 
             <TableBody>
-              {rows.map(({ employee, assignment }) => (
+              {rows.map(({ employee, shifts }) => (
                 <TableRow key={employee.id}>
 
                   {/* 员工：MUI Avatar + 名字 + 部门 */}
@@ -164,7 +178,7 @@ function Dashboard() {
                       <Avatar sx={avatarSx}>{employee.name.charAt(0)}</Avatar>
                       <div>
                         <strong>{employee.name}</strong>
-                        <span>{t.departments[employee.department]}</span>
+                        <span>{t.departments[employee.department]} · {t.employee.employment[employee.employment]}</span>
                       </div>
                     </div>
                   </TableCell>
@@ -172,7 +186,7 @@ function Dashboard() {
                   {/* 每个班次一格：这个人上的是这个班 → 显示时间；否则显示「休息」 */}
                   {shiftDefinitions.map((s) => (
                     <TableCell key={s.type}>
-                      {assignment!.shift === s.type ? (
+                      {shifts.has(s.type) ? (
                         <div className={`shift ${s.type}`}>{shiftTimeLabel(s)}</div>
                       ) : (
                         <div className="shift off">{t.off}</div>
@@ -187,7 +201,8 @@ function Dashboard() {
               {rows.length === 0 && (
                 <TableRow>
                   <TableCell colSpan={shiftDefinitions.length + 1} sx={{ py: 5, color: "#9ca3af !important" }}>
-                    {t.dashboard.noShiftToday}
+                    {/* 这个月还没有班表 / 今天没人上班 */}
+                    {monthSchedule ? t.dashboard.noShiftToday : t.schedule.noSchedule}
                   </TableCell>
                 </TableRow>
               )}
