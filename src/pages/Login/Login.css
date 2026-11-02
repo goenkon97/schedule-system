@@ -1,200 +1,111 @@
 /* =====================================================
-   登录页（全屏两栏）。选择器都以 .Login 开头，避免和其他页面冲突
+   登录页 · 苹果风格
+   原则：一种背景色、一个居中的卡片、大量留白、文字层级靠大小和灰度区分，不靠颜色
+   选择器都以 .Login 开头，避免和其他页面冲突
 ===================================================== */
 
 .Login {
-  display: grid;
-  grid-template-columns: minmax(360px, 44%) 1fr;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
   height: 100vh;
   overflow: auto;              /* index.css 里 body 是 overflow:hidden，这里自己负责滚动 */
-  background: var(--background);
+  background: #F5F5F7;         /* 苹果官网常用的浅灰 */
 }
 
-/* ========== 左边品牌区 ========== */
+/* ========== 顶部：返回 + 语言 ========== */
 
-.Login .loginBrand {
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  padding: 36px 44px;
-  color: #fff;
-  background:
-    radial-gradient(circle at 85% 15%, rgba(255, 255, 255, 0.16), transparent 40%),
-    radial-gradient(circle at 10% 90%, rgba(255, 255, 255, 0.10), transparent 45%),
-    linear-gradient(155deg, #0f172a 0%, #1e3a8a 55%, #2563eb 100%);
-}
-
-.Login .brandTop {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  font-weight: 700;
-  font-size: 17px;
-}
-
-.Login .brandLogo {
-  display: grid;
-  place-items: center;
-  width: 40px;
-  height: 40px;
-  border-radius: 12px;
-  background: rgba(255, 255, 255, 0.18);
-}
-
-.Login .brandMain h1 {
-  color: #fff;
-  font-size: 34px;
-  line-height: 1.25;
-  margin-bottom: 12px;
-}
-
-.Login .brandMain > p {
-  color: rgba(255, 255, 255, 0.82);
-  font-size: 15px;
-  line-height: 1.7;
-  max-width: 420px;
-}
-
-/* 迷你班表插画 */
-.Login .brandCalendar {
-  display: grid;
-  grid-template-columns: repeat(7, 1fr);
-  gap: 8px;
-  max-width: 420px;
-  margin: 28px 0;
-  padding: 14px;
-  border-radius: 16px;
-  background: rgba(255, 255, 255, 0.12);
-  border: 1px solid rgba(255, 255, 255, 0.22);
-}
-
-.Login .miniDay {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 6px;
-  padding: 8px 0;
-  border-radius: 10px;
-  background: rgba(255, 255, 255, 0.92);
-}
-
-.Login .miniDay small {
-  color: #475569;
-  font-size: 11px;
-  font-weight: 600;
-}
-
-.Login .miniDot {
-  width: 70%;
-  height: 7px;
-  border-radius: 4px;
-}
-
-.Login .miniDot.day { background: #f5b51b; }
-.Login .miniDot.evening { background: #6366f1; }
-.Login .miniDot.evening.short { background: #fca5a5; }   /* 一个缺人的格子，增加真实感 */
-
-.Login .brandPoints {
-  list-style: none;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  font-size: 14.5px;
-}
-
-.Login .brandPoints li {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  color: rgba(255, 255, 255, 0.92);
-}
-
-.Login .brandPoints svg {
-  font-size: 20px;
-  padding: 4px;
-  box-sizing: content-box;
-  border-radius: 8px;
-  background: rgba(255, 255, 255, 0.16);
-}
-
-.Login .brandFoot {
-  font-size: 12px;
-  color: rgba(255, 255, 255, 0.6);
-}
-
-/* ========== 右边表单区 ========== */
-
-.Login .loginPanel {
-  display: flex;
-  flex-direction: column;
-  padding: 24px 32px 40px;
-}
-
-.Login .loginTopBar {
+.Login .loginTop {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
+  padding: 20px 28px;
 }
 
 .Login .backLink {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 8px 12px;
-  border-radius: 8px;
-  color: #374151;
+  gap: 2px;
+  color: #6E6E73;              /* 苹果的次要文字灰 */
   font-size: 14px;
-  font-weight: 500;
   text-decoration: none;
+  transition: color 0.15s;
 }
 
 .Login .backLink:hover {
-  background: #eef2f7;
+  color: #1D1D1F;
+}
+
+/* ========== 中间：卡片 ========== */
+
+.Login .loginMain {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 24px 16px 40px;
 }
 
 .Login .loginCard {
   width: 100%;
-  max-width: 420px;
-  margin: auto;                 /* 在右边区域里上下左右居中 */
-  padding: 36px 32px 28px;
-  background: #fff;
-  border: 1px solid var(--border);
-  border-radius: 18px;
-  box-shadow:
-    0 2px 6px rgba(15, 23, 42, 0.05),
-    0 16px 40px rgba(15, 23, 42, 0.08);
+  max-width: 400px;
+  padding: 44px 40px 36px;
+  text-align: center;
+  background: #FFFFFF;
+  border-radius: 24px;
+  /* 很柔、很散的阴影：卡片像是轻轻浮在背景上，而不是有一圈边框 */
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02), 0 24px 60px rgba(0, 0, 0, 0.06);
 }
 
-.Login .loginCard h2 {
-  font-size: 26px;
-  color: var(--text);
+.Login .loginLogo {
+  display: grid;
+  place-items: center;
+  width: 56px;
+  height: 56px;
+  margin: 0 auto 22px;
+  border-radius: 16px;
+  color: #FFFFFF;
+  background: linear-gradient(135deg, #3B82F6, #1D4ED8);
+  box-shadow: 0 8px 20px -8px rgba(37, 99, 235, 0.6);
+}
+
+.Login .loginLogo svg {
+  font-size: 28px;
+}
+
+.Login .loginCard h1 {
+  font-size: 30px;
+  font-weight: 700;
+  letter-spacing: -0.025em;    /* 苹果的大标题字距收得很紧 */
+  color: #1D1D1F;
 }
 
 .Login .loginSub {
-  margin: 8px 0 24px;
-  color: var(--text2);
-  font-size: 14px;
+  margin: 10px 0 32px;
+  font-size: 15px;
+  line-height: 1.5;
+  color: #6E6E73;
 }
 
 .Login .loginRow {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin: -4px 0 6px;
-  font-size: 14px;
+  margin: -6px 0 10px;
 }
 
 .Login .loginRow .MuiFormControlLabel-label {
-  font-size: 14px;
-  color: #4b5563;
+  font-size: 13.5px;
+  color: #6E6E73;
 }
 
 .Login .textLink {
   border: none;
   background: none;
+  padding: 0;
+  font-size: 13.5px;
   color: var(--primary);
-  font-size: 14px;
   cursor: pointer;
 }
 
@@ -202,70 +113,46 @@
   text-decoration: underline;
 }
 
-/* 演示账号 */
-.Login .demoBox {
-  margin-top: 24px;
-  padding-top: 18px;
-  border-top: 1px dashed var(--border);
-  text-align: center;
-}
+/* ========== 卡片下面：演示账号（一行小字） ========== */
 
-.Login .demoBox > span {
-  font-size: 13px;
-  font-weight: 600;
-  color: #6b7280;
-}
-
-.Login .demoButtons {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 10px;
-  margin: 12px 0 8px;
-}
-
-.Login .demoButtons button {
+.Login .demoLine {
   display: flex;
   align-items: center;
-  justify-content: center;
-  gap: 6px;
-  padding: 10px;
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  background: #f9fafb;
-  color: #1f2937;
-  font-size: 14px;
+  gap: 8px;
+  margin-top: 24px;
+  font-size: 13.5px;
+  color: #86868B;
+}
+
+.Login .demoLine button {
+  border: none;
+  background: none;
+  padding: 0;
+  font-size: 13.5px;
+  font-weight: 500;
+  color: var(--primary);
   cursor: pointer;
-  transition: background 0.15s, border-color 0.15s;
 }
 
-.Login .demoButtons button:hover {
-  border-color: var(--primary);
-  background: #eff6ff;
+.Login .demoLine button:hover {
+  text-decoration: underline;
 }
 
-.Login .demoBox small {
+/* ========== 底部 ========== */
+
+.Login .loginFoot {
+  padding: 20px;
+  text-align: center;
   font-size: 12px;
-  color: #9ca3af;
+  color: #A1A1A6;
 }
 
-/* ========== 窄屏：左边品牌区移到上面，变矮 ========== */
-@media (max-width: 860px) {
-  .Login {
-    grid-template-columns: 1fr;
-    height: auto;
-    min-height: 100vh;
+/* ========== 手机：卡片去掉阴影和圆角外框，直接铺在背景上 ========== */
+@media (max-width: 520px) {
+  .Login .loginTop { padding: 16px; }
+  .Login .loginCard {
+    padding: 36px 22px 28px;
+    border-radius: 20px;
   }
-
-  .Login .loginBrand {
-    padding: 22px 20px;
-    gap: 12px;
-  }
-
-  .Login .brandMain h1 { font-size: 24px; }
-  .Login .brandCalendar,
-  .Login .brandPoints,
-  .Login .brandFoot { display: none; }   /* 手机上只留标题，先让表单露出来 */
-
-  .Login .loginPanel { padding: 16px; }
-  .Login .loginCard { margin: 16px auto; padding: 28px 20px 22px; }
+  .Login .loginCard h1 { font-size: 26px; }
 }

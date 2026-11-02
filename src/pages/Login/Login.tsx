@@ -1,15 +1,18 @@
 // src/pages/Login/Login.tsx
 // =====================================================
-// 登录页（全屏，不显示顶部栏和左侧菜单）
+// 登录页（苹果风格：极简、居中、大量留白）
 //
-// 布局：左边蓝色品牌区（系统名 + 小插画 + 三个卖点），右边登录表单
-// 交互：
+// 布局：浅灰背景 → 中间一个白色卡片
+//   顶部：左边「返回首页」、右边语言切换（都做得很淡，不抢视线）
+//   中间：Logo → 大标题 → 一句副标题 → 邮箱 / 密码 → 登录按钮
+//   卡片下面：一行小字的演示账号入口
+//
+// 交互（和之前一样）：
 //   - 邮箱 / 密码校验（空、格式不对），错误显示在输入框下面
 //   - 密码可以点眼睛图标显示 / 隐藏
 //   - 登录中按钮转圈、不能重复点
 //   - 账号或密码错误：表单上方红色提示
-//   - 演示账号：点一下自动填好店长 / 员工的账号
-//   - 左上角「返回首页」：不登录也能回去看
+//   - 点演示账号：自动填好店长 / 员工的账号
 // =====================================================
 
 import { useState, type FormEvent } from "react";
@@ -24,15 +27,10 @@ import InputAdornment from "@mui/material/InputAdornment";
 import Alert from "@mui/material/Alert";
 import CircularProgress from "@mui/material/CircularProgress";
 
-import ArrowBackIcon from "@mui/icons-material/ArrowBack";
+import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
 import VisibilityOutlinedIcon from "@mui/icons-material/VisibilityOutlined";
 import VisibilityOffOutlinedIcon from "@mui/icons-material/VisibilityOffOutlined";
 import CalendarMonthIcon from "@mui/icons-material/CalendarMonth";
-import AutoAwesomeIcon from "@mui/icons-material/AutoAwesome";
-import EventAvailableIcon from "@mui/icons-material/EventAvailable";
-import GroupsIcon from "@mui/icons-material/Groups";
-import StorefrontOutlinedIcon from "@mui/icons-material/StorefrontOutlined";
-import PersonOutlineIcon from "@mui/icons-material/PersonOutlined";
 
 import { useLanguage } from "../../i18n/LanguageContext";
 import { useAuth } from "../../auth/AuthContext";
@@ -42,6 +40,17 @@ import "./Login.css";
 
 // 简单的邮箱格式检查：有 @，@ 后面有点
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+// 输入框的统一样式：更高、更圆、背景是很浅的灰，聚焦时变白（苹果的输入框就是这种感觉）
+const fieldSx = {
+  "& .MuiOutlinedInput-root": {
+    borderRadius: "12px",
+    backgroundColor: "#F5F5F7",
+    "& .MuiOutlinedInput-notchedOutline": { borderColor: "transparent" },
+    "&:hover .MuiOutlinedInput-notchedOutline": { borderColor: "#D2D2D7" },
+    "&.Mui-focused": { backgroundColor: "#FFFFFF" },
+  },
+};
 
 export default function Login() {
   const { t } = useLanguage();
@@ -93,55 +102,26 @@ export default function Login() {
   return (
     <div className="Login">
 
-      {/* ========== 左边：品牌区 ========== */}
-      <aside className="loginBrand">
-        <div className="brandTop">
-          <div className="brandLogo"><CalendarMonthIcon /></div>
-          <span>{t.appTitle}</span>
-        </div>
+      {/* ========== 顶部：返回 + 语言（很淡，不抢视线） ========== */}
+      <header className="loginTop">
+        <Link to="/" className="backLink">
+          <ChevronLeftIcon fontSize="small" />
+          {t.auth.backHome}
+        </Link>
+        <LanguageSwitcher tone="light" />
+      </header>
 
-        <div className="brandMain">
-          <h1>{t.auth.brandTitle}</h1>
-          <p>{t.auth.brandSubtitle}</p>
-
-          {/* 小插画：一张迷你班表，白班黄点、晚班紫点 */}
-          <div className="brandCalendar" aria-hidden="true">
-            {t.schedule.weekdays.map((w, i) => (
-              <div className="miniDay" key={i}>
-                <small>{w}</small>
-                <span className="miniDot day" />
-                <span className={`miniDot evening ${i === 5 ? "short" : ""}`} />
-              </div>
-            ))}
-          </div>
-
-          <ul className="brandPoints">
-            <li><AutoAwesomeIcon /> {t.auth.point1}</li>
-            <li><EventAvailableIcon /> {t.auth.point2}</li>
-            <li><GroupsIcon /> {t.auth.point3}</li>
-          </ul>
-        </div>
-
-        <div className="brandFoot">© 2026 Goen Kon · Portfolio</div>
-      </aside>
-
-      {/* ========== 右边：登录表单 ========== */}
-      <main className="loginPanel">
-
-        <div className="loginTopBar">
-          {/* 不登录也能回首页 */}
-          <Link to="/" className="backLink">
-            <ArrowBackIcon fontSize="small" />
-            {t.auth.backHome}
-          </Link>
-          <LanguageSwitcher tone="light" />
-        </div>
-
+      {/* ========== 中间：登录卡片 ========== */}
+      <main className="loginMain">
         <form className="loginCard" onSubmit={handleSubmit} noValidate>
-          <h2>{t.auth.title}</h2>
+
+          {/* Logo：和顶部栏里的一样，保持品牌一致 */}
+          <div className="loginLogo"><CalendarMonthIcon /></div>
+
+          <h1>{t.auth.title}</h1>
           <p className="loginSub">{t.auth.subtitle}</p>
 
-          {formError && <Alert severity="error" sx={{ mb: 2 }}>{formError}</Alert>}
+          {formError && <Alert severity="error" sx={{ mb: 2, textAlign: "left" }}>{formError}</Alert>}
 
           <TextField
             label={t.auth.email}
@@ -152,7 +132,7 @@ export default function Login() {
             onChange={(e) => setEmail(e.target.value)}
             error={!!errors.email}
             helperText={errors.email || " "}        // 空格占位：有没有错误时高度都一样，表单不会跳
-            sx={{ mb: 1 }}
+            sx={fieldSx}
           />
 
           <TextField
@@ -164,6 +144,7 @@ export default function Login() {
             onChange={(e) => setPassword(e.target.value)}
             error={!!errors.password}
             helperText={errors.password || " "}
+            sx={fieldSx}
             slotProps={{
               input: {
                 endAdornment: (
@@ -172,8 +153,9 @@ export default function Login() {
                       aria-label={showPassword ? t.auth.hidePassword : t.auth.showPassword}
                       onClick={() => setShowPassword((v) => !v)}
                       edge="end"
+                      size="small"
                     >
-                      {showPassword ? <VisibilityOffOutlinedIcon /> : <VisibilityOutlinedIcon />}
+                      {showPassword ? <VisibilityOffOutlinedIcon fontSize="small" /> : <VisibilityOutlinedIcon fontSize="small" />}
                     </IconButton>
                   </InputAdornment>
                 ),
@@ -197,28 +179,22 @@ export default function Login() {
             size="large"
             fullWidth
             disabled={loading}
-            sx={{ mt: 1, py: 1.4, borderRadius: "10px", fontWeight: 700, textTransform: "none", fontSize: 16 }}
+            sx={{ mt: 1, py: 1.5, borderRadius: "12px", fontSize: 16, fontWeight: 600 }}
           >
             {loading ? <CircularProgress size={22} color="inherit" /> : t.auth.submit}
           </Button>
-
-          {/* 演示账号：给面试官一键体验 */}
-          <div className="demoBox">
-            <span>{t.auth.demoTitle}</span>
-            <div className="demoButtons">
-              <button type="button" onClick={() => fillDemo(0)}>
-                <StorefrontOutlinedIcon fontSize="small" />
-                <b>{t.auth.demoManager}</b>
-              </button>
-              <button type="button" onClick={() => fillDemo(1)}>
-                <PersonOutlineIcon fontSize="small" />
-                <b>{t.auth.demoStaff}</b>
-              </button>
-            </div>
-            <small>{t.auth.demoHint}</small>
-          </div>
         </form>
+
+        {/* 演示账号：卡片外面一行小字，需要时点一下就填好 */}
+        <p className="demoLine">
+          {t.auth.demoTitle}
+          <button type="button" onClick={() => fillDemo(0)}>{t.auth.demoManager}</button>
+          <span aria-hidden="true">·</span>
+          <button type="button" onClick={() => fillDemo(1)}>{t.auth.demoStaff}</button>
+        </p>
       </main>
+
+      <footer className="loginFoot">© 2026 Goen Kon</footer>
     </div>
   );
 }
