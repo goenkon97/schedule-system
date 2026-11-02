@@ -3,6 +3,7 @@ import type { ComponentProps } from "react";
 import Card from "../../components/Card/Card";
 import { useNavigate } from "react-router-dom";
 import NoticePanel from "./NoticePanel";
+import { pendingRequestCount } from "../../data/requests";
 import "./Dashboard.css";
 import { useLanguage } from "../../i18n/LanguageContext";
 
@@ -101,7 +102,8 @@ function Dashboard() {
       value: leaveToday,
       icon: EventAvailableIcon,
       tone: 'amber',
-      description: t.dashboard.pendingRequests(2),
+      // 未处理的员工申请数（真实数据，来自 data/requests.ts）
+      description: t.dashboard.pendingRequests(pendingRequestCount()),
     },
     {
       id: 4,
