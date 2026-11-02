@@ -1,11 +1,11 @@
 // src/pages/Login/Login.tsx
 // =====================================================
-// 登录页（苹果风格：极简、居中、大量留白）
+// 登录页（苹果风格：简洁、留白、层级清楚）
 //
-// 布局：浅灰背景 → 中间一个白色卡片
-//   顶部：左边「返回首页」、右边语言切换（都做得很淡，不抢视线）
-//   中间：Logo → 大标题 → 一句副标题 → 邮箱 / 密码 → 登录按钮
-//   卡片下面：一行小字的演示账号入口
+// 宽屏：左右两栏
+//   左边：深蓝品牌区，只放 Logo + 一句大标题 + 一句副标题 + 一个简洁的班表插画
+//   右边：白色背景，表单居中（大标题 → 副标题 → 邮箱 / 密码 → 登录按钮 → 一行演示账号）
+// 手机：隐藏左边品牌区，变成浅灰背景 + 居中白色卡片
 //
 // 交互（和之前一样）：
 //   - 邮箱 / 密码校验（空、格式不对），错误显示在输入框下面
@@ -102,7 +102,36 @@ export default function Login() {
   return (
     <div className="Login">
 
-      {/* ========== 顶部：返回 + 语言（很淡，不抢视线） ========== */}
+      {/* ========== 左边：品牌区（只放最重要的三样：名字、一句话、一张图） ========== */}
+      <aside className="loginBrand">
+        <div className="brandTop">
+          <div className="brandLogo"><CalendarMonthIcon /></div>
+          <span>{t.appTitle}</span>
+        </div>
+
+        <div className="brandMain">
+          <h2>{t.auth.brandTitle}</h2>
+          <p>{t.auth.brandSubtitle}</p>
+
+          {/* 插画：一周的迷你班表，白班一条黄、晚班一条紫，周六晚班缺人（浅红） */}
+          <div className="brandCalendar" aria-hidden="true">
+            {t.schedule.weekdays.map((w, i) => (
+              <div className="miniDay" key={i}>
+                <small>{w}</small>
+                <span className="miniBar day" />
+                <span className={`miniBar evening ${i === 5 ? "short" : ""}`} />
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="brandFoot">© 2026 Goen Kon</div>
+      </aside>
+
+      {/* ========== 右边：表单区 ========== */}
+      <div className="loginSide">
+
+      {/* 顶部：返回 + 语言（很淡，不抢视线） */}
       <header className="loginTop">
         <Link to="/" className="backLink">
           <ChevronLeftIcon fontSize="small" />
@@ -111,11 +140,10 @@ export default function Login() {
         <LanguageSwitcher tone="light" />
       </header>
 
-      {/* ========== 中间：登录卡片 ========== */}
       <main className="loginMain">
         <form className="loginCard" onSubmit={handleSubmit} noValidate>
 
-          {/* Logo：和顶部栏里的一样，保持品牌一致 */}
+          {/* Logo：宽屏时左边品牌区已经有了，这里只在手机上显示 */}
           <div className="loginLogo"><CalendarMonthIcon /></div>
 
           <h1>{t.auth.title}</h1>
@@ -194,7 +222,7 @@ export default function Login() {
         </p>
       </main>
 
-      <footer className="loginFoot">© 2026 Goen Kon</footer>
+      </div>
     </div>
   );
 }

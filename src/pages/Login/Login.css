@@ -1,25 +1,133 @@
 /* =====================================================
    登录页 · 苹果风格
-   原则：一种背景色、一个居中的卡片、大量留白、文字层级靠大小和灰度区分，不靠颜色
+   原则：颜色少、留白多、层级靠字号和灰度，不靠堆信息
+   宽屏左右两栏；手机只留表单（浅灰背景 + 白色卡片）
    选择器都以 .Login 开头，避免和其他页面冲突
 ===================================================== */
 
 .Login {
+  display: grid;
+  grid-template-columns: minmax(380px, 46%) 1fr;
+  height: 100vh;
+  overflow: auto;              /* index.css 里 body 是 overflow:hidden，这里自己负责滚动 */
+  background: #FFFFFF;
+}
+
+/* ========== 左边：品牌区 ========== */
+
+.Login .loginBrand {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 40px 56px;
+  color: #FFFFFF;
+  overflow: hidden;
+  /* 深海军蓝 → 品牌蓝，和顶部栏的外壳颜色呼应；右上角一团很淡的光 */
+  background:
+    radial-gradient(600px circle at 90% 0%, rgba(96, 165, 250, 0.35), transparent 60%),
+    linear-gradient(160deg, #0B1220 0%, #12245A 55%, #1D4ED8 100%);
+}
+
+.Login .brandTop {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.Login .brandLogo {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.14);
+  backdrop-filter: blur(8px);
+}
+
+.Login .brandLogo svg {
+  font-size: 20px;
+}
+
+.Login .brandMain h2 {
+  max-width: 440px;
+  font-size: 44px;
+  font-weight: 700;
+  line-height: 1.1;
+  letter-spacing: -0.03em;     /* 苹果式的大标题：字大、字距紧 */
+  color: #FFFFFF;
+}
+
+.Login .brandMain > p {
+  max-width: 400px;
+  margin-top: 16px;
+  font-size: 16px;
+  line-height: 1.6;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+/* 插画：毛玻璃卡片里的一周班表，只有两条色块，很克制 */
+.Login .brandCalendar {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 8px;
+  max-width: 420px;
+  margin-top: 48px;
+  padding: 16px;
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  backdrop-filter: blur(12px);
+  box-shadow: 0 30px 60px -30px rgba(0, 0, 0, 0.5);
+}
+
+.Login .miniDay {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 7px;
+  padding: 10px 0 12px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.96);
+}
+
+.Login .miniDay small {
+  font-size: 11px;
+  font-weight: 600;
+  color: #6E6E73;
+}
+
+.Login .miniBar {
+  width: 64%;
+  height: 6px;
+  border-radius: 3px;
+}
+
+.Login .miniBar.day { background: #F5B51B; }
+.Login .miniBar.evening { background: #6366F1; }
+.Login .miniBar.evening.short { background: #FCA5A5; }
+
+.Login .brandFoot {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.45);
+}
+
+/* ========== 右边：表单区 ========== */
+
+.Login .loginSide {
   display: flex;
   flex-direction: column;
   min-height: 100vh;
-  height: 100vh;
-  overflow: auto;              /* index.css 里 body 是 overflow:hidden，这里自己负责滚动 */
-  background: #F5F5F7;         /* 苹果官网常用的浅灰 */
 }
-
-/* ========== 顶部：返回 + 语言 ========== */
 
 .Login .loginTop {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 20px 28px;
+  padding: 24px 32px;
 }
 
 .Login .backLink {
@@ -36,48 +144,30 @@
   color: #1D1D1F;
 }
 
-/* ========== 中间：卡片 ========== */
-
 .Login .loginMain {
   flex: 1;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 24px 16px 40px;
+  padding: 16px 24px 64px;
 }
 
+/* 宽屏：表单直接放在白色背景上，不加卡片外框，更干净 */
 .Login .loginCard {
   width: 100%;
-  max-width: 400px;
-  padding: 44px 40px 36px;
-  text-align: center;
-  background: #FFFFFF;
-  border-radius: 24px;
-  /* 很柔、很散的阴影：卡片像是轻轻浮在背景上，而不是有一圈边框 */
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02), 0 24px 60px rgba(0, 0, 0, 0.06);
+  max-width: 380px;
+  text-align: left;
 }
 
 .Login .loginLogo {
-  display: grid;
-  place-items: center;
-  width: 56px;
-  height: 56px;
-  margin: 0 auto 22px;
-  border-radius: 16px;
-  color: #FFFFFF;
-  background: linear-gradient(135deg, #3B82F6, #1D4ED8);
-  box-shadow: 0 8px 20px -8px rgba(37, 99, 235, 0.6);
-}
-
-.Login .loginLogo svg {
-  font-size: 28px;
+  display: none;               /* 宽屏时左边已经有 Logo */
 }
 
 .Login .loginCard h1 {
-  font-size: 30px;
+  font-size: 32px;
   font-weight: 700;
-  letter-spacing: -0.025em;    /* 苹果的大标题字距收得很紧 */
+  letter-spacing: -0.025em;
   color: #1D1D1F;
 }
 
@@ -113,13 +203,16 @@
   text-decoration: underline;
 }
 
-/* ========== 卡片下面：演示账号（一行小字） ========== */
-
+/* 演示账号：一行小字 */
 .Login .demoLine {
   display: flex;
   align-items: center;
   gap: 8px;
-  margin-top: 24px;
+  width: 100%;
+  max-width: 380px;
+  margin-top: 28px;
+  padding-top: 20px;
+  border-top: 1px solid #F0F0F2;
   font-size: 13.5px;
   color: #86868B;
 }
@@ -138,21 +231,39 @@
   text-decoration: underline;
 }
 
-/* ========== 底部 ========== */
-
-.Login .loginFoot {
-  padding: 20px;
-  text-align: center;
-  font-size: 12px;
-  color: #A1A1A6;
-}
-
-/* ========== 手机：卡片去掉阴影和圆角外框，直接铺在背景上 ========== */
-@media (max-width: 520px) {
-  .Login .loginTop { padding: 16px; }
-  .Login .loginCard {
-    padding: 36px 22px 28px;
-    border-radius: 20px;
+/* ========== 窄屏 / 手机：隐藏品牌区，表单变成浅灰背景上的白色卡片 ========== */
+@media (max-width: 900px) {
+  .Login {
+    grid-template-columns: 1fr;
+    background: #F5F5F7;
   }
+
+  .Login .loginBrand { display: none; }
+
+  .Login .loginTop { padding: 16px; }
+
+  .Login .loginCard {
+    max-width: 400px;
+    padding: 40px 28px 32px;
+    text-align: center;
+    background: #FFFFFF;
+    border-radius: 24px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02), 0 24px 60px rgba(0, 0, 0, 0.06);
+  }
+
+  .Login .loginLogo {
+    display: grid;
+    place-items: center;
+    width: 56px;
+    height: 56px;
+    margin: 0 auto 22px;
+    border-radius: 16px;
+    color: #FFFFFF;
+    background: linear-gradient(135deg, #3B82F6, #1D4ED8);
+    box-shadow: 0 8px 20px -8px rgba(37, 99, 235, 0.6);
+  }
+
+  .Login .loginLogo svg { font-size: 28px; }
   .Login .loginCard h1 { font-size: 26px; }
+  .Login .demoLine { justify-content: center; border-top: none; padding-top: 0; }
 }
