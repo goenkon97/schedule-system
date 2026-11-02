@@ -4,7 +4,7 @@
 //
 // 第 1 步「设置」：
 //   左边：选择不参加排班的正社员（只列正社员，兼职不在这里排）
-//   右边：选月份 + 调厨房 / 服务员每天需要的正社员人数（带 + − 按钮）
+//   右边：选月份（只能选下个月、下下个月）+ 调厨房 / 服务员每天需要的正社员人数（带 + − 按钮）
 //         下面实时显示「需要几名 / 可用几名 / 缺几名」
 // 第 2 步「预览」：
 //   用前端的排班算法（src/data/fullTimeScheduler.ts）算出整月班表，用「月历」的样子显示：
@@ -38,6 +38,7 @@ import {
   type ScheduleResult,
 } from "../../data/fullTimeScheduler";
 import type { GenerateScheduleData } from "../../pages/Schedule/Schedule";
+import { monthKey } from "../../data/scheduleStore";
 
 // 取名字首字母作头像："Tom Lee" → "TL"
 const initials = (name: string) => name.split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase();
@@ -50,13 +51,6 @@ const shortName = (name: string) => {
 
 // id → 员工，预览表格里用
 const byId = new Map(employees.map((e) => [e.id, e]));
-
-// 默认选中的月份：下个月（排班一般提前排下个月），格式 "2026-12"
-function nextMonthValue() {
-  const d = new Date();
-  d.setMonth(d.getMonth() + 1, 1);
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
-}
 
 const DEPTS: Department[] = ["Kitchen", "Hall"];
 
@@ -80,16 +74,21 @@ function Stepper({ value, onChange, min = 1, max = 10 }: {
 function CreateScheduleDialog({
   onShow,
   onGenerate,
+  months,
+  existingKeys,
 }: {
   onShow: (value: boolean) => void;                 // 打开 / 关闭弹窗
   onGenerate: (data: GenerateScheduleData) => void; // 点「使用这个班表」时把结果交给父组件
+  months: { year: number; month: number }[];        // 可以选的月份（下个月、下下个月）
+  existingKeys: string[];                           // 已经有班表的月份，例如 ["2026-11", "2026-12"]
 }) {
   const { t, locale } = useLanguage();
 
   // ---------- 第 1 步的表单 ----------
   const [keyword, setKeyword] = useState("");
   const [excluded, setExcluded] = useState<number[]>([]);
-  const [month, setMonth] = useState(nextMonthValue());
+  // 选中的月份，格式 "2026-12"；默认选下个月
+  const [month, setMonth] = useState(monthKey(months[0].year, months[0].month));
   const [settings, setSettings] = useState<FullTimeSettings>(DEFAULT_SETTINGS);
 
   // ---------- 第 2 步：算出来的班表（null = 还在第 1 步）----------
@@ -125,7 +124,8 @@ function CreateScheduleDialog({
 
   // 点「使用这个班表」：交给父组件（以后这里会调用后端接口保存）
   const handleConfirm = () => {
-    onGenerate({ year, month: monthNum, excludedEmployees: excluded, ...settings });
+    if (!result) return;
+    onGenerate({ year, month: monthNum, excludedEmployees: excluded, ...settings, result });
   };
 
   return (
@@ -186,7 +186,28 @@ function CreateScheduleDialog({
             {/* 右边：月份 + 每天需要的正社员人数 + 规则 */}
             <div className="scheduleSettings">
               <h3>{t.dialog.monthTitle}</h3>
-              <input className="monthInput" type="month" value={month} onChange={(e) => setMonth(e.target.value)} />
+              <p className="sectionDescription">{t.dialog.monthLimitHint}</p>
+
+              {/* 只能选两个月：做成两个并排的按钮（分段选择器） */}
+              <div className="monthPicker">
+                {months.map((m) => {
+                  const k = monthKey(m.year, m.month);
+                  return (
+                    <button
+                      type="button"
+                      key={k}
+                      className={k === month ? "active" : undefined}
+                      onClick={() => setMonth(k)}
+                    >
+                      {new Date(m.year, m.month - 1, 1).toLocaleString(locale, { year: "numeric", month: "long" })}
+                      {existingKeys.includes(k) && <small>{t.dialog.monthExists}</small>}
+                    </button>
+                  );
+                })}
+              </div>
+              {existingKeys.includes(month) && (
+                <Alert severity="info" sx={{ mt: 1, py: 0, fontSize: 12.5 }}>{t.dialog.monthExistsWarn}</Alert>
+              )}
 
               <div className="staffingBox">
                 <strong>{t.dialog.staffingTitle}</strong>

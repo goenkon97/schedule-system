@@ -1,369 +1,298 @@
-import { useMemo, useState } from "react";
+// src/pages/Schedule/Schedule.tsx
+// =====================================================
+// 排班页：显示「已经生成的班表」（一个月 = 一个 MonthSchedule 对象，见 src/data/scheduleStore.ts）
+//
+// - 左右箭头切换月份：只能看 当前月 / 下个月 / 下下个月 三个月
+// - 月历每一格：橙色圆点 = 厨房正社员，蓝色 = 服务员正社员，灰色 = 兼职；缺人的格子标红
+// - 点某一天：店长可以修改这天的人员（DayEditorDialog），其他人只能看
+// - 备注：店长可以给每个月的班表写备注
+// - 改过之后班表变成「草稿」，店长点「提交班表」把整个月的数据提交到后台（后端完成前先在前端模拟）
+// - 「新建排班」只有店长能用，而且只能选下个月和下下个月
+// =====================================================
+
+import { useEffect, useMemo, useState } from "react";
 import AddIcon from "@mui/icons-material/Add";
+import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
+import ChevronRightIcon from "@mui/icons-material/ChevronRight";
+import CloudUploadOutlinedIcon from "@mui/icons-material/CloudUploadOutlined";
+import Tooltip from "@mui/material/Tooltip";
+import Snackbar from "@mui/material/Snackbar";
+import Alert from "@mui/material/Alert";
 import CreateScheduleDialog from "../../components/CreateScheduleDialog/CreateScheduleDialog";
+import DayEditorDialog from "../../components/DayEditorDialog/DayEditorDialog";
 import "./Schedule.css";
 import { useLanguage } from "../../i18n/LanguageContext";
+import { useAuth } from "../../auth/AuthContext";
 import type { Department } from "../../i18n/translations";
 
-// 业务数据：班次定义（白班 / 晚班 + 需要人数）、员工、排班记录
-import { shiftDefinitions, shiftTimeLabel, departments, requiredStaff } from "../../data/shifts";
 import { employees } from "../../data/employees";
-import { scheduleWithLeaves, mockLeaves, toDateKey } from "../../data/mockSchedule";
+import type { FullTimeSettings, ScheduleResult } from "../../data/fullTimeScheduler";
+import {
+  buildMonthSchedule,
+  loadSchedules,
+  monthFromToday,
+  monthKey,
+  saveSchedules,
+  type DayEntry,
+  type ScheduleMap,
+} from "../../data/scheduleStore";
 
 // 从「新建排班」弹窗传回来的数据
-export interface GenerateScheduleData {
+export interface GenerateScheduleData extends FullTimeSettings {
   year: number;
   month: number;                 // 1 ~ 12（给人看的月份）
   excludedEmployees: number[];   // 不参加排班的员工 id
-  kitchenPerDay: number;         // 厨房每天需要几名正社员
-  hallPerDay: number;            // 服务员每天需要几名正社员
+  result: ScheduleResult;        // 前端算法算好的整月班表
 }
 
 // 部门筛选：全部，或某一个部门
 type DeptFilter = Department | "all";
 
-// ======================================================
-// Schedule 页面
-// ======================================================
+const byId = new Map(employees.map((e) => [e.id, e]));
+const initials = (name: string) => name.split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase();
+
+// 最多能看几个月：当前月 + 后面 2 个月
+const MAX_OFFSET = 2;
 
 function Schedule() {
-
-  // t：当前语言的翻译；locale：格式化日期用（如 "ja-JP"）
   const { t, locale } = useLanguage();
+  const { user } = useAuth();
 
-  // 当前 Calendar 显示的月份
-  const [currentDate, setCurrentDate] = useState(new Date());
+  // 只有店长能新建、修改、提交
+  const canEdit = user?.role === "manager";
 
-  // Create Schedule Dialog 是否打开
+  // ---------- 所有月份的班表（现在存在浏览器里，以后从后端拉）----------
+  const [schedules, setSchedules] = useState<ScheduleMap>(loadSchedules);
+  useEffect(() => saveSchedules(schedules), [schedules]);   // 一改就存
+
+  // 现在看的是第几个月：0 = 当前月，1 = 下个月，2 = 下下个月
+  const [offset, setOffset] = useState(0);
+  const { year, month } = monthFromToday(offset);           // month 是 1 ~ 12
+  const key = monthKey(year, month);
+  const current = schedules[key];                           // 这个月的班表（可能还没有）
+
   const [showDialog, setDialogOpen] = useState(false);
-
-  // 当前鼠标悬停的日期
-  const [hoveredDay, setHoveredDay] = useState<number | null>(null);
-
-  // 部门筛选（现在真的会生效了：月历上的人数和需要人数都按部门算）
+  const [editingDay, setEditingDay] = useState<number | null>(null);   // 正在看 / 改第几天
   const [dept, setDept] = useState<DeptFilter>("all");
+  const [toast, setToast] = useState("");
 
-  // ======================================================
-  // 根据 currentDate 自动计算年月
-  // ======================================================
+  // 月份标题：en → "December 2026"，zh / ja → "2026年12月"
+  const monthTitle = new Date(year, month - 1, 1).toLocaleString(locale, { year: "numeric", month: "long" });
 
-  const year = currentDate.getFullYear();
-  const month = currentDate.getMonth();          // JS 的月份从 0 开始：0 = 1 月
+  // 1 号是星期几 → 前面空几格
+  const firstWeekday = new Date(year, month - 1, 1).getDay();
+  const daysInMonth = new Date(year, month, 0).getDate();
+  const today = new Date();
 
-  // 当前月份有多少天（下个月的第 0 天 = 这个月的最后一天）
-  const daysInMonth = new Date(year, month + 1, 0).getDate();
-
-  // 当前月份 1 号是星期几（Sunday = 0 … Saturday = 6）
-  const firstDayOfMonth = new Date(year, month, 1).getDay();
-
-  // ======================================================
-  // 排班记录和请假记录（Mock，以后换成接口）
-  // 月份变了才重新生成
-  // ======================================================
-
-  // 先按规则排好整个月，再把请假那天的班改成休息（所以请假多的日子会显示缺人）
-  const assignments = useMemo(() => scheduleWithLeaves(year, month), [year, month]);
-  const leaves = useMemo(() => mockLeaves(year, month), [year, month]);
-
-  // 员工 id → 部门，筛选请假时要用
-  const deptOf = useMemo(() => new Map(employees.map((e) => [e.id, e.department])), []);
-
-  // ======================================================
-  // 每一天的统计：每个班次排了几个人、需要几个人、有几人请假
-  // ======================================================
-
-  const scheduleDays = useMemo(() => {
-    return Array.from({ length: daysInMonth }, (_, index) => {
-      const date = index + 1;
-      const key = toDateKey(new Date(year, month, date));
-
-      const shifts = shiftDefinitions.map((s) => {
-        // 这一天、这个班次、（按筛选的部门）排了几个人
-        const assigned = assignments.filter(
-          (a) => a.date === key && a.shift === s.type && (dept === "all" || a.department === dept)
-        ).length;
-        const required = requiredStaff(s, dept);
-        return { def: s, assigned, required, short: Math.max(0, required - assigned) };
-      });
-
-      // 每个部门的明细（tooltip 里显示「厨房 2/2 · 服务员 2/2」）
-      const byDept = (type: string) =>
-        departments
-          .filter((d) => dept === "all" || d === dept)
-          .map((d) => ({
-            dept: d,
-            assigned: assignments.filter((a) => a.date === key && a.shift === type && a.department === d).length,
-            required: requiredStaff(shiftDefinitions.find((s) => s.type === type)!, d),
-          }));
-
-      const leave = leaves.filter(
-        (l) => l.date === key && (dept === "all" || deptOf.get(l.employeeId) === dept)
-      ).length;
-
-      return { date, shifts, byDept, leave };
+  // ---------- 修改班表的几个动作（都会把班表变成「草稿」，等店长提交）----------
+  const updateCurrent = (patch: (s: NonNullable<typeof current>) => NonNullable<typeof current>) =>
+    setSchedules((prev) => {
+      const s = prev[key];
+      if (!s) return prev;
+      return { ...prev, [key]: { ...patch(s), status: "draft", updatedAt: new Date().toISOString() } };
     });
-  }, [daysInMonth, year, month, assignments, leaves, dept, deptOf]);
 
-  // ======================================================
-  // Calendar 前面的空白格（1 号是星期三 → 前面空 3 格）
-  // ======================================================
-
-  const emptyDays = Array.from({ length: firstDayOfMonth }, (_, index) => index);
-
-  // 例：en → "November 2026"，zh / ja → "2026年11月"
-  const monthTitle = currentDate.toLocaleString(locale, { year: "numeric", month: "long" });
-
-  // ======================================================
-  // Generate Schedule：弹窗点「生成」后，月历切到选中的月份
-  // （真正的生成以后由后端接口完成：POST /api/schedules/generate）
-  // ======================================================
-
-  const handleGenerateSchedule = (data: GenerateScheduleData) => {
-    setCurrentDate(new Date(data.year, data.month - 1, 1));
-    setDialogOpen(false);
-    console.log("Generate Schedule:", data);
+  // 保存某一天的修改
+  const saveDay = (index: number, day: DayEntry) => {
+    updateCurrent((s) => ({ ...s, days: s.days.map((d, i) => (i === index ? day : d)) }));
+    setEditingDay(null);
   };
+
+  // 修改备注
+  const changeNote = (note: string) => updateCurrent((s) => ({ ...s, note }));
+
+  // 提交班表：以后这里换成 fetch("/api/schedules", { method: "POST", body: JSON.stringify(current) })
+  const submit = () => {
+    if (!current) return;
+    const payload = { ...current, status: "submitted" as const, updatedAt: new Date().toISOString() };
+    console.log("Submit schedule →", payload);              // 提交给后端的就是这个对象
+    setSchedules((prev) => ({ ...prev, [key]: payload }));
+    setToast(t.schedule.submittedToast);
+  };
+
+  // 新建排班：弹窗确认后，把算好的结果变成一个月的班表对象，并切换到那个月
+  const handleGenerate = (data: GenerateScheduleData) => {
+    const s = buildMonthSchedule(data.year, data.month, { kitchenPerDay: data.kitchenPerDay, hallPerDay: data.hallPerDay }, data.result);
+    setSchedules((prev) => ({ ...prev, [s.id]: s }));
+    // 算出这个月是从今天往后第几个月，切过去
+    const now = monthFromToday(0);
+    setOffset((data.year - now.year) * 12 + (data.month - now.month));
+    setDialogOpen(false);
+  };
+
+  // 弹窗里可以选的两个月（下个月、下下个月），以及哪些已经有班表
+  const creatable = [1, 2].map((o) => monthFromToday(o));
+  const existingKeys = useMemo(() => Object.keys(schedules), [schedules]);
+
+  const showKitchen = dept === "all" || dept === "Kitchen";
+  const showHall = dept === "all" || dept === "Hall";
 
   return (
     <div className="Schedule">
 
-      {/* ==================================================
-          页面顶部
-      ================================================== */}
-
+      {/* ================= 页面顶部 ================= */}
       <div className="scheduleTop">
-
         <div>
           <h1>{t.schedule.title}</h1>
           <p>{t.schedule.subtitle}</p>
         </div>
 
-        <button
-          className="createScheduleButton"
-          onClick={() => setDialogOpen(true)}
-        >
-          <AddIcon />
-          {t.schedule.create}
-        </button>
-
+        {/* 只有店长能新建；其他人按钮变灰，鼠标移上去说明原因 */}
+        <Tooltip title={canEdit ? "" : t.schedule.managerOnly} arrow>
+          <span>
+            <button className="createScheduleButton" disabled={!canEdit} onClick={() => setDialogOpen(true)}>
+              <AddIcon />
+              {t.schedule.create}
+            </button>
+          </span>
+        </Tooltip>
       </div>
 
-
-      {/* ==================================================
-          工具栏：当前月份 + 部门筛选
-      ================================================== */}
-
+      {/* ================= 工具栏：月份切换 + 状态 + 部门筛选 + 提交 ================= */}
       <div className="scheduleToolbar">
+        <div className="monthNav">
+          <button className="navBtn" aria-label={t.schedule.prevMonth} disabled={offset === 0} onClick={() => setOffset((o) => o - 1)}>
+            <ChevronLeftIcon />
+          </button>
+          <div className="currentMonth">{monthTitle}</div>
+          <button className="navBtn" aria-label={t.schedule.nextMonth} disabled={offset === MAX_OFFSET} onClick={() => setOffset((o) => o + 1)}>
+            <ChevronRightIcon />
+          </button>
 
-        <div className="currentMonth">
-          {monthTitle}
+          {current && (
+            <span className={`statusBadge ${current.status}`}>
+              {current.status === "draft" ? t.schedule.statusDraft : t.schedule.statusSubmitted}
+            </span>
+          )}
         </div>
 
-        {/* value 用英文固定值（以后传给后端），显示文字翻译 */}
-        <select
-          className="scheduleFilter"
-          value={dept}
-          onChange={(e) => setDept(e.target.value as DeptFilter)}
-        >
-          <option value="all">{t.allDepartments}</option>
-          {departments.map((d) => (
-            <option key={d} value={d}>{t.departments[d]}</option>
-          ))}
-        </select>
+        <div className="toolbarRight">
+          <select className="scheduleFilter" value={dept} onChange={(e) => setDept(e.target.value as DeptFilter)}>
+            <option value="all">{t.allDepartments}</option>
+            <option value="Kitchen">{t.departments.Kitchen}</option>
+            <option value="Hall">{t.departments.Hall}</option>
+          </select>
 
+          {canEdit && current?.status === "draft" && (
+            <button className="submitButton" onClick={submit}>
+              <CloudUploadOutlinedIcon fontSize="small" />
+              {t.schedule.submit}
+            </button>
+          )}
+        </div>
       </div>
 
-
-      {/* ==================================================
-          班次图例：由 shiftDefinitions 生成（白班 / 晚班）
-      ================================================== */}
-
-      <div className="scheduleLegend">
-
-        {shiftDefinitions.map((s) => (
-          <div className="legendItem" key={s.type}>
-            <span className={`legendColor ${s.type}`} />
-            <div>
-              <strong>{shiftTimeLabel(s)}</strong>
-              <span>
-                {t.shifts[s.type]} · {departments.map((d) => `${t.departments[d]} ${s.required[d]}`).join(" / ")}
-              </span>
-            </div>
-          </div>
-        ))}
-
-        <div className="legendItem">
-          <span className="legendColor red" />
-          <div>
-            <strong>{t.leave}</strong>
-            <span>{t.onLeave}</span>
-          </div>
+      {/* ================= 备注 ================= */}
+      {current && (
+        <div className="noteBox">
+          <span className="noteLabel">{t.schedule.note}</span>
+          {canEdit ? (
+            <input
+              className="noteInput"
+              value={current.note}
+              placeholder={t.schedule.notePlaceholder}
+              onChange={(e) => changeNote(e.target.value)}
+            />
+          ) : (
+            <span className={`noteText ${current.note ? "" : "empty"}`}>{current.note || t.schedule.noNote}</span>
+          )}
         </div>
+      )}
 
-        <div className="legendItem">
-          <span className="legendColor short" />
-          <div>
-            <strong>{t.schedule.shortLegend}</strong>
-            <span>{t.schedule.shortLegendDesc}</span>
-          </div>
-        </div>
-
+      {/* ================= 图例 + 操作提示 ================= */}
+      <div className="calLegend">
+        <span><i className="calDot Kitchen" /> {t.departments.Kitchen}</span>
+        <span><i className="calDot Hall" /> {t.departments.Hall}</span>
+        <span><i className="calDot partTime" /> {t.schedule.partTime}</span>
+        <span><i className="calDot empty" /> {t.schedule.shortLegend}</span>
+        {current && <span className="calHint">{canEdit ? t.schedule.clickToEdit : t.schedule.clickToView}</span>}
       </div>
 
-
-      {/* ==================================================
-          Calendar
-      ================================================== */}
-
+      {/* ================= 月历 ================= */}
       <div className="calendar">
-
-        {/* 星期名从翻译里取，index 0 = 周日，6 = 周六 */}
         <div className="calendarHeader">
           {t.schedule.weekdays.map((name, index) => (
-            <div
-              key={index}
-              className={index === 0 || index === 6 ? "weekend" : undefined}
-            >
-              {name}
-            </div>
+            <div key={index} className={index === 0 || index === 6 ? "weekend" : undefined}>{name}</div>
           ))}
         </div>
 
-        <div className="calendarBody">
+        {!current ? (
+          /* 这个月还没有班表 */
+          <div className="emptyState">
+            <strong>{t.schedule.noSchedule}</strong>
+            <span>{canEdit ? t.schedule.noScheduleManager : t.schedule.noScheduleStaff}</span>
+          </div>
+        ) : (
+          <div className="calendarBody">
+            {Array.from({ length: firstWeekday }, (_, i) => (
+              <div className="calendarDay outside" key={`empty-${i}`} />
+            ))}
 
-          {/* 前面的空白格 */}
-          {emptyDays.map((_, index) => (
-            <div className="calendarDay outside" key={`empty-${index}`} />
-          ))}
+            {current.days.slice(0, daysInMonth).map((d, i) => {
+              const weekday = (firstWeekday + i) % 7;
+              const kShort = showKitchen ? current.settings.kitchenPerDay - d.kitchen.length : 0;
+              const hShort = showHall ? current.settings.hallPerDay - d.hall.length : 0;
+              const isShort = kShort > 0 || hShort > 0;
+              const isToday = offset === 0 && i + 1 === today.getDate();
 
-          {/* 真正的日期 */}
-          {scheduleDays.map((day) => {
+              return (
+                <div
+                  key={d.date}
+                  className={`calendarDay ${weekday === 0 || weekday === 6 ? "weekendDay" : ""} ${isShort ? "isShort" : ""} ${isToday ? "today" : ""}`}
+                  onClick={() => setEditingDay(i)}
+                >
+                  <div className="dayNumber">{i + 1}</div>
 
-            // 当前日期是星期几
-            const weekday = new Date(year, month, day.date).getDay();
-
-            // 这一天所有班次一共排了几个人
-            const totalStaff = day.shifts.reduce((sum, s) => sum + s.assigned, 0);
-
-            return (
-
-              <div
-                className={`calendarDay ${weekday === 0 || weekday === 6 ? "weekendDay" : ""}`}
-                key={day.date}
-                onMouseEnter={() => setHoveredDay(day.date)}
-                onMouseLeave={() => setHoveredDay(null)}
-              >
-
-                <div className="dayNumber">{day.date}</div>
-
-                {/* 每个班次一行：色点 + 班次名 + 排了几个/需要几个；缺人时变红 */}
-                <div className="daySchedule">
-
-                  {day.shifts.map((s) => (
-                    <div className={`shiftRow ${s.short ? "isShort" : ""}`} key={s.def.type}>
-                      <span className={`scheduleDot ${s.def.type}`} />
-                      <span className="shiftRowName">{t.shifts[s.def.type]}</span>
-                      <span className="shiftRowCount">{t.coverage(s.assigned, s.required)}</span>
-                    </div>
-                  ))}
-
-                  {day.leave > 0 && (
-                    <div className="leaveCount">
-                      <span className="leaveDot" />
-                      {t.leaveCount(day.leave)}
+                  {showKitchen && (
+                    <div className="calDots">
+                      {d.kitchen.map((id) => <i className="calDot Kitchen" key={id} title={byId.get(id)?.name}>{initials(byId.get(id)!.name)}</i>)}
+                      {Array.from({ length: Math.max(0, kShort) }, (_, k) => <i className="calDot empty" key={`k${k}`} />)}
                     </div>
                   )}
 
-                </div>
-
-                {/* ==================================================
-                    Hover Tooltip：每个班次的时间 + 各部门人数
-                ================================================== */}
-
-                {hoveredDay === day.date && (
-
-                  <div className="scheduleTooltip">
-
-                    <div className="tooltipHeader">
-                      <div>
-                        <strong>
-                          {/* 例：en → "November 1, 2026"，zh / ja → "2026年11月1日" */}
-                          {new Date(year, month, day.date).toLocaleDateString(locale, {
-                            year: "numeric",
-                            month: "long",
-                            day: "numeric",
-                          })}
-                        </strong>
-                        <span>{t.schedule.scheduled(totalStaff)}</span>
-                      </div>
-                    </div>
-
-                    <div className="tooltipContent">
-
-                      {day.shifts.map((s) => (
-                        <div className="tooltipShift" key={s.def.type}>
-                          <span className={`tooltipColor ${s.def.type}`} />
-                          <div>
-                            <strong>{shiftTimeLabel(s.def)}</strong>
-                            <span>
-                              {t.shifts[s.def.type]} ·{" "}
-                              {day.byDept(s.def.type)
-                                .map((d) => `${t.departments[d.dept]} ${t.coverage(d.assigned, d.required)}`)
-                                .join(" / ")}
-                            </span>
-                          </div>
-                          <span className={`tooltipStaff ${s.short ? "isShort" : ""}`}>
-                            {s.short ? t.shortBy(s.short) : t.coverage(s.assigned, s.required)}
-                          </span>
-                        </div>
+                  {showHall && (
+                    <div className="calDots">
+                      {d.hall.map((id) => <i className="calDot Hall" key={id} title={byId.get(id)?.name}>{initials(byId.get(id)!.name)}</i>)}
+                      {Array.from({ length: Math.max(0, hShort) }, (_, k) => <i className="calDot empty" key={`h${k}`} />)}
+                      {d.partTime.map((p) => (
+                        <i className="calDot partTime" key={p.employeeId} title={`${byId.get(p.employeeId)?.name} · ${t.shifts[p.shift]}`}>
+                          {initials(byId.get(p.employeeId)!.name)}
+                        </i>
                       ))}
-
-                      {day.leave > 0 && (
-                        <div className="tooltipShift">
-                          <span className="tooltipColor red" />
-                          <div>
-                            <strong>{t.leave}</strong>
-                            <span>{t.onLeave}</span>
-                          </div>
-                          <span className="tooltipStaff">{t.staffCount(day.leave)}</span>
-                        </div>
-                      )}
-
                     </div>
-
-                    <div className="tooltipFooter">
-                      {t.schedule.viewDetails}
-                    </div>
-
-                  </div>
-
-                )}
-
-              </div>
-
-            );
-
-          })}
-
-        </div>
-
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
 
-
-      {/* ==================================================
-          Create Schedule Dialog
-      ================================================== */}
-
+      {/* ================= 弹窗 ================= */}
       {showDialog && (
         <CreateScheduleDialog
           onShow={setDialogOpen}
-          onGenerate={handleGenerateSchedule}
+          onGenerate={handleGenerate}
+          months={creatable}
+          existingKeys={existingKeys}
         />
       )}
 
+      {current && editingDay !== null && (
+        <DayEditorDialog
+          schedule={current}
+          dayIndex={editingDay}
+          canEdit={canEdit}
+          onSave={(day) => saveDay(editingDay, day)}
+          onClose={() => setEditingDay(null)}
+        />
+      )}
+
+      <Snackbar open={!!toast} autoHideDuration={3500} onClose={() => setToast("")} anchorOrigin={{ vertical: "bottom", horizontal: "center" }}>
+        <Alert severity="success" variant="filled" onClose={() => setToast("")}>{toast}</Alert>
+      </Snackbar>
     </div>
   );
 }
-
 
 export default Schedule;

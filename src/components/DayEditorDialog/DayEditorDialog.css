@@ -1,0 +1,85 @@
+/* 某一天的人员编辑弹窗（选择器都以 .dayEditor 开头，避免冲突） */
+
+.dayEditor { display: flex; flex-direction: column; max-height: calc(100vh - 64px); }
+
+.dayEditor .deHeader {
+  display: flex; justify-content: space-between; align-items: flex-start;
+  padding: 22px 24px 14px; border-bottom: 1px solid var(--border);
+}
+.dayEditor .deHeader h2 { font-size: 20px; letter-spacing: -0.01em; color: var(--text); }
+.dayEditor .deHeader p { margin-top: 4px; font-size: 13px; color: var(--text2); }
+
+.dayEditor .deClose {
+  display: grid; place-items: center; width: 34px; height: 34px;
+  border: none; border-radius: 8px; background: transparent; color: var(--text2); cursor: pointer;
+}
+.dayEditor .deClose:hover { background: #f1f5f9; }
+
+.dayEditor .deBody { flex: 1; min-height: 0; overflow-y: auto; padding: 16px 24px; }
+
+.dayEditor .deSection { padding: 12px 0 14px; border-bottom: 1px solid #f1f5f9; }
+.dayEditor .deSection:last-child { border-bottom: none; }
+
+.dayEditor .deSectionHead { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+.dayEditor .deSectionHead h3 { font-size: 14px; color: var(--text); }
+
+.dayEditor .deCount {
+  padding: 2px 9px; border-radius: 999px; font-size: 12px; font-weight: 600;
+  color: #15803d; background: #dcfce7;
+}
+.dayEditor .deCount.isShort { color: #b91c1c; background: #fee2e2; }
+
+.dayEditor .dePeople { display: flex; flex-wrap: wrap; gap: 8px; }
+.dayEditor .deEmpty { font-size: 13px; color: #94a3b8; }
+
+.dayEditor .dePerson {
+  display: inline-flex; align-items: center; gap: 7px;
+  padding: 4px 6px 4px 4px; border-radius: 999px;
+  font-size: 13px; font-weight: 500; color: var(--text); background: #f8fafc; border: 1px solid var(--border);
+}
+.dayEditor .dePerson i {
+  display: grid; place-items: center; width: 24px; height: 24px; border-radius: 50%;
+  font-size: 9.5px; font-weight: 700; font-style: normal;
+}
+.dayEditor .dePerson.Kitchen i { color: #9a3412; background: #ffedd5; }
+.dayEditor .dePerson.Hall i { color: #1e40af; background: #dbeafe; }
+.dayEditor .dePerson.partTime i { color: #475569; background: #e2e8f0; }
+.dayEditor .dePerson small { font-size: 11.5px; color: var(--text2); }
+.dayEditor .deShift.day { color: #b7791f; }
+.dayEditor .deShift.evening { color: #4f46e5; }
+
+.dayEditor .dePerson button {
+  display: grid; place-items: center; width: 20px; height: 20px;
+  border: none; border-radius: 50%; background: transparent; color: #94a3b8; cursor: pointer;
+}
+.dayEditor .dePerson button:hover { color: #dc2626; background: #fee2e2; }
+
+.dayEditor .deSelect {
+  margin-top: 10px; height: 36px; padding: 0 10px;
+  border: 1px solid var(--border); border-radius: 8px; background: #fff;
+  font-size: 13px; color: var(--text); outline: none; min-width: 200px;
+}
+.dayEditor .deSelect:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12); }
+.dayEditor .deSelect.narrow { min-width: 150px; }
+
+.dayEditor .deAddRow { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.dayEditor .deAddRow .deSelect { margin-top: 10px; }
+
+.dayEditor .deAddBtn {
+  display: inline-flex; align-items: center; gap: 4px; height: 36px; margin-top: 10px; padding: 0 14px;
+  border: none; border-radius: 8px; background: var(--primary-soft); color: var(--primary);
+  font-size: 13px; font-weight: 600; cursor: pointer;
+}
+.dayEditor .deAddBtn:disabled { color: #94a3b8; background: #f1f5f9; cursor: not-allowed; }
+
+.dayEditor .deFooter {
+  display: flex; justify-content: flex-end; gap: 10px;
+  padding: 14px 24px; border-top: 1px solid var(--border);
+}
+.dayEditor .deBtn {
+  height: 40px; padding: 0 18px; border: 1px solid var(--border); border-radius: 10px;
+  background: #fff; color: var(--text); font-size: 14px; font-weight: 600; cursor: pointer;
+}
+.dayEditor .deBtn:hover { background: #f8fafc; }
+.dayEditor .deBtn.primary { border-color: var(--primary); background: var(--primary); color: #fff; }
+.dayEditor .deBtn.primary:hover { background: var(--primary-hover); }
