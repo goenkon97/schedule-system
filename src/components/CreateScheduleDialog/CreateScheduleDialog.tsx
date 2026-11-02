@@ -7,20 +7,19 @@
 //   右边：选月份 + 调厨房 / 服务员每天需要的正社员人数（带 + − 按钮）
 //         下面实时显示「需要几名 / 可用几名 / 缺几名」
 // 第 2 步「预览」：
-//   用前端的排班算法（src/data/fullTimeScheduler.ts）算出整月班表，在弹窗里显示：
-//   每天厨房、服务员各是谁上班，缺人的日子标红；最下面是每人这个月上几天
+//   用前端的排班算法（src/data/fullTimeScheduler.ts）算出整月班表，用「月历」的样子显示：
+//   每个日期格里，橙色圆点 = 厨房正社员，蓝色圆点 = 服务员正社员（圆点里是名字缩写，鼠标悬停看全名）
+//   缺人的格子标红、画虚线空位；最下面是每人这个月上几天
+//
+// 布局：弹窗最高 = 屏幕高度；标题栏和底部按钮固定，只有中间内容区在需要时滚动，
+//       这样按钮永远看得见，电脑上一般一屏就能显示完
 //   点「使用这个班表」确认；点「返回修改」回到第 1 步
 // =====================================================
 
 import { useMemo, useState } from "react";
 import Dialog from "@mui/material/Dialog";
 import Alert from "@mui/material/Alert";
-import TableContainer from "@mui/material/TableContainer";
-import Table from "@mui/material/Table";
-import TableHead from "@mui/material/TableHead";
-import TableBody from "@mui/material/TableBody";
-import TableRow from "@mui/material/TableRow";
-import TableCell from "@mui/material/TableCell";
+import Tooltip from "@mui/material/Tooltip";
 import CloseIcon from "@mui/icons-material/Close";
 import AddIcon from "@mui/icons-material/Add";
 import RemoveIcon from "@mui/icons-material/Remove";
@@ -38,13 +37,12 @@ import {
   type FullTimeSettings,
   type ScheduleResult,
 } from "../../data/fullTimeScheduler";
-import { tableSx } from "../DataTable/tableStyles";
 import type { GenerateScheduleData } from "../../pages/Schedule/Schedule";
 
 // 取名字首字母作头像："Tom Lee" → "TL"
 const initials = (name: string) => name.split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase();
 
-// 短名字："Tom Lee" → "Tom L."（表格里放得下）
+// 短名字："Tom Lee" → "Tom L."（底部「每人天数」里用）
 const shortName = (name: string) => {
   const [first, last] = name.split(" ");
   return last ? `${first} ${last[0]}.` : first;
@@ -131,7 +129,15 @@ function CreateScheduleDialog({
   };
 
   return (
-    <Dialog open onClose={() => onShow(false)} maxWidth="md" fullWidth>
+    <Dialog
+      open
+      onClose={() => onShow(false)}
+      // 预览日历需要更宽一点，所以第 2 步用 lg
+      maxWidth={result ? "lg" : "md"}
+      fullWidth
+      // 纸面本身不滚动，交给里面的内容区滚动 → 标题栏和底部按钮始终可见
+      slotProps={{ paper: { sx: { display: "flex", overflow: "hidden" } } }}
+    >
       <div className="createScheduleDialog">
 
         {/* ========== Header ========== */}
@@ -230,54 +236,52 @@ function CreateScheduleDialog({
               {result.shortDayCount ? t.dialog.shortDays(result.shortDayCount) : t.dialog.allCovered}
             </div>
 
-            {/* 整月班表：一行一天 */}
-            <TableContainer className="previewTable">
-              <Table stickyHeader size="small" sx={[tableSx, { "& .MuiTableCell-root": { whiteSpace: "normal" } }]}>
-                <TableHead>
-                  <TableRow>
-                    <TableCell sx={{ width: 92 }}>{t.dialog.colDate}</TableCell>
-                    {DEPTS.map((d) => <TableCell key={d}>{t.departments[d]}</TableCell>)}
-                    <TableCell sx={{ width: 130 }}>{t.dialog.colStatus}</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {result.days.map((d) => {
-                    const weekend = d.weekday === 0 || d.weekday === 6;
-                    const short = DEPTS.filter((dept) => d.short[dept] > 0);
-                    return (
-                      <TableRow key={d.date} className={weekend ? "weekendRow" : undefined}>
-                        <TableCell>
-                          <span className="previewDate">{monthNum}/{d.day}</span>
-                          <span className={`previewWeekday ${weekend ? "weekend" : ""}`}>{t.schedule.weekdays[d.weekday]}</span>
-                        </TableCell>
-                        {DEPTS.map((dept) => (
-                          <TableCell key={dept}>
-                            <div className="nameChips">
-                              {d.staff[dept].map((id) => (
-                                <span className={`nameChip ${dept}`} key={id}>{shortName(byId.get(id)!.name)}</span>
-                              ))}
-                              {/* 缺几人，就画几个虚线空位 */}
-                              {Array.from({ length: d.short[dept] }, (_, i) => (
-                                <span className="nameChip empty" key={`e${i}`}>—</span>
-                              ))}
-                            </div>
-                          </TableCell>
+            {/* 图例：颜色代表什么 */}
+            <div className="pvLegend">
+              <span><i className="pvDot Kitchen" /> {t.departments.Kitchen}</span>
+              <span><i className="pvDot Hall" /> {t.departments.Hall}</span>
+              <span><i className="pvDot empty" /> {t.schedule.shortLegend}</span>
+            </div>
+
+            {/* 整月班表：月历的样子，和 Schedule 页面的月历一样从周日开始 */}
+            <div className="pvCalendar">
+              {t.schedule.weekdays.map((w, i) => (
+                <div className={`pvHead ${i === 0 || i === 6 ? "weekend" : ""}`} key={w}>{w}</div>
+              ))}
+
+              {/* 1 号前面的空白格：1 号是星期几，前面就空几格 */}
+              {Array.from({ length: result.days[0].weekday }, (_, i) => (
+                <div className="pvCell outside" key={`blank${i}`} />
+              ))}
+
+              {result.days.map((d) => {
+                const isShort = DEPTS.some((dept) => d.short[dept] > 0);
+                const weekend = d.weekday === 0 || d.weekday === 6;
+                return (
+                  <div className={`pvCell ${isShort ? "isShort" : ""}`} key={d.date}>
+                    <div className={`pvDate ${weekend ? "weekend" : ""}`}>{d.day}</div>
+
+                    {/* 每个部门一行圆点 */}
+                    {DEPTS.map((dept) => (
+                      <div className="pvRow" key={dept}>
+                        {d.staff[dept].map((id) => {
+                          const e = byId.get(id)!;
+                          return (
+                            <Tooltip title={`${e.name} · ${t.departments[dept]}`} key={id} arrow>
+                              <span className={`pvDot ${dept}`}>{initials(e.name)}</span>
+                            </Tooltip>
+                          );
+                        })}
+                        {/* 缺几人，就画几个红色虚线空位 */}
+                        {Array.from({ length: d.short[dept] }, (_, i) => (
+                          <span className="pvDot empty" key={`e${i}`} />
                         ))}
-                        <TableCell>
-                          {short.length ? (
-                            <span className="statusShort">
-                              {short.map((dept) => `${t.departments[dept]} ${t.dialog.shortOf(d.short[dept])}`).join(" · ")}
-                            </span>
-                          ) : (
-                            <span className="statusOk">{t.dialog.ok}</span>
-                          )}
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })}
-                </TableBody>
-              </Table>
-            </TableContainer>
+                      </div>
+                    ))}
+                  </div>
+                );
+              })}
+            </div>
 
             {/* 每人上几天：一眼看出是否平均 */}
             <div className="daysSummary">
@@ -288,6 +292,7 @@ function CreateScheduleDialog({
                   <div className="nameChips">
                     {availableFullTime(dept, excluded).map((e) => (
                       <span className={`nameChip ${dept}`} key={e.id}>
+                        <i className={`pvDot small ${dept}`}>{initials(e.name)}</i>
                         {shortName(e.name)} <b>{t.dialog.days(result.daysByEmployee.get(e.id) ?? 0)}</b>
                       </span>
                     ))}
