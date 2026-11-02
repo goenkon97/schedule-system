@@ -5,7 +5,7 @@ import Settings from './pages/Settings/Settings';
 import Login from './pages/Login/Login';
 
 import { useEffect, useState } from 'react';
-import { Routes, Route, Link, useLocation, useNavigate } from 'react-router-dom';
+import { Routes, Route, Link, Navigate, useLocation, useNavigate } from 'react-router-dom';
 
 // 员工申请：侧边栏「员工」后面显示店长还没处理的申请数量
 import { pendingRequestCount, subscribeRequests } from './data/requests';
@@ -82,8 +82,9 @@ function App() {
       name: t.nav.settings,
       path: '/settings',
       icon: SettingsIcon,
+      managerOnly: true,   // 设置只有店长能看（员工没有修改设置的权限）
     },
-  ];
+  ].filter((page) => !('managerOnly' in page) || isManager);   // 员工：把店长专用的菜单去掉
 
   // =========================
   // Drawer 内容
@@ -280,9 +281,10 @@ function App() {
               element={<Schedule />}
             />
 
+            {/* 设置：员工直接输入网址也进不来，会被送回首页 */}
             <Route
               path="/settings"
-              element={<Settings />}
+              element={isManager ? <Settings /> : <Navigate to="/" replace />}
             />
 
           </Routes>

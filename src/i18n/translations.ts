@@ -105,6 +105,14 @@ const en = {
     employee: "Employee",
     viewFull: "View Full Schedule →",
     noShiftToday: "No one is scheduled today.",
+    // 通知小模块
+    noticeTitle: "Staff notifications",
+    noticeEmpty: "No new notifications.",
+    noticeViewAll: "View all requests →",
+    myNoticeTitle: "My requests",
+    myNoticeEmpty: "You haven't sent any requests.",
+    myNoticeGo: "Go to My Info →",
+    timeAgo: { justNow: "just now", minutes: (n: number) => `${n} min ago`, hours: (n: number) => `${n} h ago`, days: (n: number) => `${n} d ago` },
   },
 
   schedule: {
@@ -310,6 +318,7 @@ const en = {
     fieldEmployment: "Employment type",
     fieldStatus: "Status",
     kitchenFullTimeOnly: "Kitchen staff are all full-time.",
+    managerFullTimeOnly: "The store manager must be full-time.",
     fullTimeHint: "Full-time staff are included in auto scheduling (4 full days a week).",
     partTimeHint: "Part-timers are not auto-scheduled. The manager adds them to days manually.",
     onLeaveHint: "Employees on leave are skipped by auto scheduling.",
@@ -436,6 +445,13 @@ const zh: Dictionary = {
     employee: "员工",
     viewFull: "查看完整排班 →",
     noShiftToday: "今天没有人排班。",
+    noticeTitle: "员工通知",
+    noticeEmpty: "没有新的通知。",
+    noticeViewAll: "查看全部申请 →",
+    myNoticeTitle: "我的申请",
+    myNoticeEmpty: "还没有提交过申请。",
+    myNoticeGo: "去我的信息 →",
+    timeAgo: { justNow: "刚刚", minutes: (n) => `${n} 分钟前`, hours: (n) => `${n} 小时前`, days: (n) => `${n} 天前` },
   },
 
   schedule: {
@@ -636,6 +652,7 @@ const zh: Dictionary = {
     fieldEmployment: "雇佣类型",
     fieldStatus: "状态",
     kitchenFullTimeOnly: "厨房全部是正社员。",
+    managerFullTimeOnly: "店长必须是正社员。",
     fullTimeHint: "正社员会参加自动排班（每周 4 天全天班）。",
     partTimeHint: "兼职不参加自动排班，由店长在某一天里手动添加。",
     onLeaveHint: "休假中的员工，自动排班时会跳过。",
@@ -756,6 +773,13 @@ const ja: Dictionary = {
     employee: "従業員",
     viewFull: "シフト表をすべて見る →",
     noShiftToday: "本日はシフトがありません。",
+    noticeTitle: "従業員からの通知",
+    noticeEmpty: "新しい通知はありません。",
+    noticeViewAll: "すべての申請を見る →",
+    myNoticeTitle: "自分の申請",
+    myNoticeEmpty: "まだ申請はありません。",
+    myNoticeGo: "マイ情報へ →",
+    timeAgo: { justNow: "たった今", minutes: (n) => `${n}分前`, hours: (n) => `${n}時間前`, days: (n) => `${n}日前` },
   },
 
   schedule: {
@@ -957,6 +981,7 @@ const ja: Dictionary = {
     fieldEmployment: "雇用形態",
     fieldStatus: "ステータス",
     kitchenFullTimeOnly: "キッチンは全員正社員です。",
+    managerFullTimeOnly: "店長は正社員のみです。",
     fullTimeHint: "正社員は自動シフト作成の対象です（週4日・終日）。",
     partTimeHint: "アルバイトは自動シフトの対象外です。店長が日ごとに手動で追加します。",
     onLeaveHint: "休暇中の従業員は自動シフト作成で除外されます。",

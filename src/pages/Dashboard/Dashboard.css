@@ -107,3 +107,160 @@
     font-weight: 400;
     color: #9ca3af;
 }
+
+/* =====================================================
+   下半部分布局：左边今日排班，右边通知
+   minmax(0, 1fr)：让左边的表格可以缩小（不然表格会把整行撑宽）
+===================================================== */
+.dashMain {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 340px;
+    gap: 20px;
+    align-items: start;
+}
+
+/* 屏幕窄的时候，通知放到排班下面 */
+@media (max-width: 1100px) {
+    .dashMain {
+        grid-template-columns: minmax(0, 1fr);
+    }
+}
+
+/* ========== 通知小模块 ========== */
+.noticePanel {
+    display: flex;
+    flex-direction: column;
+    background: #ffffff;
+    border: 1px solid #e5e7eb;
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow:
+        0 2px 6px rgba(15, 23, 42, 0.05),
+        0 8px 24px rgba(15, 23, 42, 0.06);
+}
+
+.noticeHead {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 24px 20px 14px;
+}
+
+.noticeHead h2 {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 18px;
+}
+
+.noticeHead h2 svg {
+    font-size: 21px;
+    color: #64748b;
+}
+
+/* 数量：员工是灰色，店长的未处理是红色 */
+.noticeCount {
+    min-width: 22px;
+    height: 22px;
+    padding: 0 7px;
+    border-radius: 999px;
+    background: #e2e8f0;
+    color: #475569;
+    font-size: 12px;
+    font-weight: 700;
+    line-height: 22px;
+    text-align: center;
+}
+
+.noticeCount.alert {
+    background: #dc2626;
+    color: #fff;
+}
+
+.noticeList {
+    display: flex;
+    flex-direction: column;
+    padding: 0 10px 8px;
+}
+
+.noticeEmpty {
+    padding: 28px 10px 32px;
+    text-align: center;
+    font-size: 14px;
+    color: #9ca3af;
+}
+
+/* 每条通知是一个按钮：整块都能点 */
+.noticeItem {
+    display: block;
+    width: 100%;
+    padding: 12px 10px;
+    border: none;
+    border-top: 1px solid #f1f5f9;
+    background: transparent;
+    text-align: left;
+    font: inherit;
+    cursor: pointer;
+    border-radius: 10px;
+}
+
+.noticeItem:first-child {
+    border-top: none;
+}
+
+.noticeItem:hover {
+    background: #f8faff;
+}
+
+.noticeTop {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+}
+
+.noticeTop strong {
+    font-size: 14px;
+    color: #111827;
+}
+
+.noticeDate {
+    margin-top: 6px;
+    font-size: 13px;
+    font-weight: 600;
+    color: #374151;
+}
+
+/* 备注最多显示两行，多的用 … */
+.noticeNote {
+    margin-top: 3px;
+    font-size: 13px;
+    line-height: 1.5;
+    color: #6b7280;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.noticeItem small {
+    display: block;
+    margin-top: 5px;
+    font-size: 12px;
+    color: #9ca3af;
+}
+
+.noticeFooter {
+    padding: 18px;
+    border: none;
+    border-top: 1px solid #eef0f3;
+    background: transparent;
+    color: #2563eb;
+    font: inherit;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.noticeFooter:hover {
+    background: #f8faff;
+}

@@ -8,7 +8,7 @@
 // 表单规则（和 docs/business-rules.md 一致）：
 // 1. 姓名、电话必填；电话只能是数字和「-」，而且不能和别人重复
 // 2. 职位跟着部门走：厨房 = 主厨 / 厨师 / 洗碗工，服务员 = 服务员 / 接待 / 店长
-// 3. 厨房全部是正社员，选了厨房就不能选兼职
+// 3. 厨房全部是正社员，选了厨房就不能选兼职；店长也一定是正社员，选了店长同样不能选兼职
 // 4. 职位是「店长」时，点添加 / 保存后会再弹一个确认框，确认后才真正提交
 //    （店长以后对应管理权限，填错影响很大，所以多确认一次）
 //
@@ -74,6 +74,19 @@ export default function EmployeeFormDialog({ employee, allEmployees, onClose, on
     setErrors((prev) => ({ ...prev, [key]: undefined }));
   };
 
+  // 必须是正社员的情况：厨房的人，或者职位是店长
+  const mustBeFullTime = (department: Department, position: Position) =>
+    department === "Kitchen" || position === "Manager";
+
+  // 换职位：选了店长，雇佣类型自动变成正社员
+  const changePosition = (position: Position) => {
+    setForm((prev) => ({
+      ...prev,
+      position,
+      employment: mustBeFullTime(prev.department, position) ? "fullTime" : prev.employment,
+    }));
+  };
+
   // 换部门：职位换成新部门的第一个；厨房强制正社员
   const changeDepartment = (department: Department) => {
     setForm((prev) => ({
@@ -125,6 +138,7 @@ export default function EmployeeFormDialog({ employee, allEmployees, onClose, on
   // 雇佣类型下面的说明文字
   const employmentHint =
     form.department === "Kitchen" ? t.employee.kitchenFullTimeOnly
+      : form.position === "Manager" ? t.employee.managerFullTimeOnly
       : form.employment === "fullTime" ? t.employee.fullTimeHint
         : t.employee.partTimeHint;
 
@@ -206,7 +220,7 @@ export default function EmployeeFormDialog({ employee, allEmployees, onClose, on
                   type="button"
                   key={p}
                   className={form.position === p ? "active" : ""}
-                  onClick={() => setField("position", p)}
+                  onClick={() => changePosition(p)}
                 >
                   {t.employee.positions[p]}
                 </button>
@@ -224,8 +238,8 @@ export default function EmployeeFormDialog({ employee, allEmployees, onClose, on
                     type="button"
                     key={m}
                     className={form.employment === m ? "active" : ""}
-                    // 厨房只能是正社员，兼职按钮变灰
-                    disabled={form.department === "Kitchen" && m === "partTime"}
+                    // 厨房、店长只能是正社员，兼职按钮变灰
+                    disabled={mustBeFullTime(form.department, form.position) && m === "partTime"}
                     onClick={() => setField("employment", m)}
                   >
                     {t.employee.employment[m]}
