@@ -12,7 +12,9 @@
 // 增删改查都走 employeeApi（data/employees.ts），现在存在浏览器里，
 // 刷新页面数据还在；以后接后端只改 employeeApi 里面，这个页面不用动。
 //
-// 权限：只有店长能添加 / 编辑 / 删除，员工账号只能看和导出
+// 权限：
+// - 店长：两个标签页「员工列表」（增删改查）和「员工申请」（看员工发来的请假 / 换班等申请）
+// - 员工：看不到员工列表，只显示「我的信息」页（MyProfile.tsx）：自己的信息 + 提交申请
 //
 // 表格部分使用 MUI 组件：
 // TableContainer / Table / TableHead / TableBody / TableRow / TableCell
@@ -21,6 +23,7 @@
 // =====================================================
 
 import { useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 
 // ---------- MUI 组件 ----------
 import TableContainer from "@mui/material/TableContainer";
@@ -49,6 +52,9 @@ import { useLanguage } from "../../i18n/LanguageContext";
 import { useAuth } from "../../auth/AuthContext";
 import { employeeApi, type Employee as EmployeeData, type EmployeeInput } from "../../data/employees";
 import EmployeeFormDialog from "../../components/EmployeeFormDialog/EmployeeFormDialog";
+import MyProfile from "./MyProfile";
+import RequestsPanel from "./RequestsPanel";
+import { pendingRequestCount, subscribeRequests } from "../../data/requests";
 import type { EmployeeStatus } from "../../i18n/translations";
 import { tableSx, avatarSx } from "../../components/DataTable/tableStyles";
 import "./Employee.css";
@@ -72,13 +78,39 @@ function getInitials(name: string) {
     .toUpperCase();
 }
 
+// =====================================================
+// 入口：按登录角色决定显示哪个页面
+// =====================================================
 function Employee() {
+  const { user } = useAuth();
+
+  // 员工账号 → 「我的信息」
+  if (user && user.role !== "manager") return <MyProfile user={user} />;
+
+  // 店长 → 员工管理
+  return <EmployeeManager />;
+}
+
+// =====================================================
+// 店长看到的员工管理页
+// =====================================================
+function EmployeeManager() {
 
   const { t } = useLanguage();
   const { user } = useAuth();
 
-  // 只有店长能添加、编辑、删除
+  // 只有店长能添加、编辑、删除（这个页面本来只有店长能进，这里再保险一次）
   const canEdit = user?.role === "manager";
+
+  // ---------- 标签页：员工列表 / 员工申请 ----------
+  // 存在网址里（/employee?tab=requests），这样侧边栏的红色数字点过来能直接打开「员工申请」
+  const [searchParams, setSearchParams] = useSearchParams();
+  const tab = searchParams.get("tab") === "requests" ? "requests" : "list";
+  const setTab = (next: "list" | "requests") => setSearchParams(next === "requests" ? { tab: "requests" } : {});
+
+  // 未处理申请的数量（标签上的红色数字），申请数据一变就更新
+  const [pending, setPending] = useState(pendingRequestCount);
+  useEffect(() => subscribeRequests(() => setPending(pendingRequestCount())), []);
 
   // 员工列表放进 state：增删改之后页面会重新渲染
   const [list, setList] = useState<EmployeeData[]>([]);
@@ -230,7 +262,23 @@ function Employee() {
       <h1>{t.employee.title}</h1>
       <p className="pageSubtitle">{t.employee.subtitle}</p>
 
-      {/* ========== 工具栏（这一部分下一步再换组件） ========== */}
+      {/* ========== 标签页 ========== */}
+      <div className="employeeTabs">
+        <button className={tab === "list" ? "active" : ""} onClick={() => setTab("list")}>
+          {t.requests.tabList}
+        </button>
+        <button className={tab === "requests" ? "active" : ""} onClick={() => setTab("requests")}>
+          {t.requests.tabRequests}
+          {/* 有未处理的申请时显示红色数字 */}
+          {pending > 0 && <span className="tabBadge">{pending}</span>}
+        </button>
+      </div>
+
+      {tab === "requests" && <RequestsPanel onToast={setToast} />}
+
+      {tab === "list" && (<>
+
+      {/* ========== 工具栏 ========== */}
       <div className="employeeToolbar">
 
         <div className="employeeSearchBox">
@@ -397,6 +445,8 @@ function Employee() {
         </div>
 
       </div>
+
+      </>)}
 
       {/* ========== 添加 / 编辑弹窗 ==========
           key 不一样时 React 会重新创建组件，表单就会用新的人的数据重新填 */}

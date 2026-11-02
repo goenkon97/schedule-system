@@ -4,7 +4,11 @@ import Schedule from './pages/Schedule/Schedule';
 import Settings from './pages/Settings/Settings';
 import Login from './pages/Login/Login';
 
+import { useEffect, useState } from 'react';
 import { Routes, Route, Link, useLocation, useNavigate } from 'react-router-dom';
+
+// 员工申请：侧边栏「员工」后面显示店长还没处理的申请数量
+import { pendingRequestCount, subscribeRequests } from './data/requests';
 
 // 登录状态
 import { useAuth } from './auth/AuthContext';
@@ -46,6 +50,12 @@ function App() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
 
+  const isManager = user?.role === 'manager';
+
+  // 未处理申请数：一开始读一次，之后申请一有变化（提交 / 撤回 / 标记）就重新读
+  const [pendingCount, setPendingCount] = useState(pendingRequestCount);
+  useEffect(() => subscribeRequests(() => setPendingCount(pendingRequestCount())), []);
+
   // =========================
   // 侧边栏菜单
   // =========================
@@ -61,9 +71,12 @@ function App() {
       icon: CalendarMonthIcon,
     },
     {
-      name: t.nav.employee,
+      // 店长：员工管理；员工：同一个网址，但显示的是「我的信息」
+      name: isManager ? t.nav.employee : t.nav.myInfo,
       path: '/employee',
       icon: BadgeIcon,
+      // 只有店长看到红色数字（有员工提交了申请还没处理）
+      badge: isManager ? pendingCount : 0,
     },
     {
       name: t.nav.settings,
@@ -127,6 +140,20 @@ function App() {
                   primary={page.name}
                   slotProps={{ primary: { sx: { fontSize: 14.5, fontWeight: 600 } } }}
                 />
+
+                {/* 红色数字：'badge' in page 判断这一项有没有 badge 字段 */}
+                {'badge' in page && !!page.badge && (
+                  <Box
+                    component="span"
+                    sx={{
+                      minWidth: 20, height: 20, px: 0.75, borderRadius: 999,
+                      bgcolor: '#DC2626', color: '#fff',
+                      fontSize: 11.5, fontWeight: 700, lineHeight: '20px', textAlign: 'center',
+                    }}
+                  >
+                    {page.badge}
+                  </Box>
+                )}
 
               </ListItemButton>
 

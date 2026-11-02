@@ -1,0 +1,144 @@
+/* =====================================================
+   「我的信息」（员工端）和「员工申请」（店长端）共用的样式
+===================================================== */
+
+/* ---------- 申请类型、状态的小标签（两边都用） ---------- */
+.reqType {
+  display: inline-flex; align-items: center; height: 24px; padding: 0 10px;
+  border-radius: 6px; font-size: 12px; font-weight: 600; white-space: nowrap;
+}
+.reqType.leave { color: #b45309; background: #fef3c7; }   /* 请假：橙 */
+.reqType.swap  { color: #4338ca; background: #e0e7ff; }   /* 换班：靛蓝 */
+.reqType.other { color: #475569; background: #e2e8f0; }   /* 其他：灰 */
+
+.reqStatus {
+  display: inline-flex; align-items: center; gap: 6px; height: 24px; padding: 0 10px;
+  border-radius: 999px; font-size: 12px; font-weight: 600; white-space: nowrap;
+}
+.reqStatus::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+.reqStatus.pending { color: #b91c1c; background: #fee2e2; }   /* 未处理：红，提醒店长 */
+.reqStatus.done    { color: #15803d; background: #dcfce7; }   /* 已沟通：绿 */
+
+/* =====================================================
+   员工端「我的信息」
+===================================================== */
+.MyProfile { width: 100%; }
+.MyProfile .pageSubtitle { margin-top: 8px; color: var(--text2); font-size: 14px; }
+
+/* 左边基本信息，右边提交申请；窄屏变一列 */
+.MyProfile .mpGrid {
+  display: grid; grid-template-columns: minmax(280px, 360px) 1fr; gap: 20px;
+  margin-top: 28px; align-items: start;
+}
+@media (max-width: 900px) { .MyProfile .mpGrid { grid-template-columns: 1fr; } }
+
+.MyProfile .mpCard {
+  padding: 22px 24px; background: #fff;
+  border: 1px solid var(--border); border-radius: 14px;
+}
+.MyProfile .mpCardTitle { font-size: 15px; color: var(--text); }
+
+.MyProfile .mpPerson { display: flex; align-items: center; gap: 14px; padding-bottom: 18px; margin-bottom: 18px; border-bottom: 1px solid #f1f5f9; }
+.MyProfile .mpPerson h2 { font-size: 19px; color: var(--text); }
+.MyProfile .mpPerson p { margin-top: 3px; font-size: 13px; color: var(--text2); }
+
+.MyProfile .mpInfo { display: grid; grid-template-columns: auto 1fr; gap: 11px 18px; margin-top: 14px; font-size: 14px; }
+.MyProfile .mpInfo dt { color: var(--text2); }
+.MyProfile .mpInfo dd { margin: 0; color: var(--text); font-weight: 500; text-align: right; word-break: break-all; }
+.MyProfile .mpHint { margin-top: 18px; font-size: 12px; color: #94a3b8; }
+
+/* 提示条：申请只是通知 */
+.MyProfile .mpNotice {
+  display: flex; gap: 8px; align-items: flex-start; margin-top: 10px; padding: 10px 12px;
+  border-radius: 10px; background: #eff6ff; color: #1e40af; font-size: 13px; line-height: 1.55;
+}
+.MyProfile .mpNotice svg { flex-shrink: 0; font-size: 18px; margin-top: 1px; }
+
+.MyProfile .mpForm { display: flex; flex-direction: column; gap: 16px; margin-top: 18px; }
+.MyProfile .mpField { display: flex; flex-direction: column; gap: 7px; min-width: 0; }
+.MyProfile .mpField > span { font-size: 13px; font-weight: 600; color: var(--text); }
+
+.MyProfile .mpField input,
+.MyProfile .mpField textarea {
+  padding: 0 12px; border: 1px solid var(--border); border-radius: 8px; background: #fff;
+  font: inherit; font-size: 14px; color: var(--text); outline: none;
+}
+.MyProfile .mpField input { height: 42px; }
+.MyProfile .mpField textarea { padding: 10px 12px; resize: vertical; line-height: 1.5; }
+.MyProfile .mpField input:focus,
+.MyProfile .mpField textarea:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12); }
+
+.MyProfile .mpDates { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.MyProfile .mpDates.single { grid-template-columns: 1fr 1fr; }
+@media (max-width: 560px) { .MyProfile .mpDates { grid-template-columns: 1fr; } }
+
+/* 分段选择（和员工弹窗同一种样子） */
+.MyProfile .mpSegment { display: flex; gap: 4px; padding: 4px; background: #f1f5f9; border-radius: 10px; }
+.MyProfile .mpSegment button {
+  flex: 1; height: 34px; border: none; border-radius: 7px; background: transparent;
+  font-size: 13px; font-weight: 500; color: var(--text2); cursor: pointer;
+}
+.MyProfile .mpSegment button.active { background: #fff; color: var(--primary); font-weight: 600; box-shadow: 0 1px 3px rgba(15, 23, 42, 0.12); }
+
+.MyProfile .mpError { font-size: 13px; color: #dc2626; }
+
+.MyProfile .mpSubmit {
+  align-self: flex-end; display: inline-flex; align-items: center; gap: 7px;
+  height: 42px; padding: 0 20px; border: none; border-radius: 10px;
+  background: var(--primary); color: #fff; font-size: 14px; font-weight: 600; cursor: pointer;
+}
+.MyProfile .mpSubmit:hover { background: #1d4ed8; }
+
+/* ---------- 我的申请列表 ---------- */
+.MyProfile .mpList { margin-top: 20px; }
+.MyProfile .mpEmpty { margin-top: 12px; font-size: 14px; color: #94a3b8; }
+
+.MyProfile .mpItem {
+  display: flex; align-items: center; gap: 14px; padding: 14px 0;
+  border-bottom: 1px solid #f1f5f9;
+}
+.MyProfile .mpItem:last-child { border-bottom: none; padding-bottom: 0; }
+.MyProfile .mpItemMain { flex: 1; min-width: 0; }
+.MyProfile .mpItemMain strong { font-size: 14px; color: var(--text); }
+.MyProfile .mpItemMain p { margin-top: 3px; font-size: 13px; color: var(--text2); line-height: 1.5; overflow-wrap: anywhere; }
+.MyProfile .mpItemMain small { display: block; margin-top: 4px; font-size: 12px; color: #94a3b8; }
+
+.MyProfile .mpCancel {
+  height: 32px; padding: 0 12px; border: 1px solid var(--border); border-radius: 8px;
+  background: #fff; font-size: 13px; color: var(--text2); cursor: pointer;
+}
+.MyProfile .mpCancel:hover { color: #dc2626; border-color: #fecaca; background: #fef2f2; }
+
+@media (max-width: 640px) {
+  .MyProfile .mpItem { flex-wrap: wrap; }
+  .MyProfile .mpItemMain { flex-basis: calc(100% - 80px); }
+}
+
+/* =====================================================
+   店长端「员工申请」
+===================================================== */
+.reqPanel .reqHint {
+  display: flex; gap: 8px; align-items: flex-start; padding: 10px 14px; margin-bottom: 14px;
+  border-radius: 10px; background: #eff6ff; color: #1e40af; font-size: 13px; line-height: 1.55;
+}
+.reqPanel .reqHint svg { flex-shrink: 0; font-size: 18px; margin-top: 1px; }
+
+.reqPanel .reqFilter { display: inline-flex; gap: 4px; padding: 4px; margin-bottom: 14px; background: #e9eef5; border-radius: 10px; }
+.reqPanel .reqFilter button {
+  height: 32px; padding: 0 14px; border: none; border-radius: 7px; background: transparent;
+  font-size: 13px; font-weight: 500; color: var(--text2); cursor: pointer;
+}
+.reqPanel .reqFilter button.active { background: #fff; color: var(--text); font-weight: 600; box-shadow: 0 1px 3px rgba(15, 23, 42, 0.12); }
+
+.reqPanel .reqCard { background: #fff; border: 1px solid var(--border); border-radius: 14px; overflow: hidden; }
+.reqPanel .reqWho { display: flex; align-items: center; gap: 10px; }
+.reqPanel .reqWho small { display: block; font-size: 12px; color: var(--text2); }
+.reqPanel .reqNote { max-width: 320px; white-space: normal; line-height: 1.5; overflow-wrap: anywhere; }
+
+.reqPanel .reqAction {
+  height: 32px; padding: 0 12px; border-radius: 8px; font-size: 13px; font-weight: 500; cursor: pointer; white-space: nowrap;
+  border: 1px solid var(--border); background: #fff; color: var(--text);
+}
+.reqPanel .reqAction.primary { border: none; background: var(--primary); color: #fff; }
+.reqPanel .reqAction.primary:hover { background: #1d4ed8; }
+.reqPanel .reqAction:not(.primary):hover { background: #f8fafc; }
