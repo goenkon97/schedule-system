@@ -207,13 +207,14 @@ function Employee() {
         <TableContainer>
 
           {/* tableSx：所有表格共用的样式（见 components/DataTable/tableStyles.ts） */}
-          <Table sx={[tableSx, { minWidth: 760 }]}>
+          <Table sx={[tableSx, { minWidth: 860 }]}>
 
             <TableHead>
               <TableRow>
                 <TableCell>{t.employee.colEmployee}</TableCell>
                 <TableCell>{t.employee.colDepartment}</TableCell>
                 <TableCell>{t.employee.colPosition}</TableCell>
+                <TableCell>{t.employee.colType}</TableCell>
                 <TableCell>{t.employee.colPhone}</TableCell>
                 <TableCell>{t.employee.colStatus}</TableCell>
                 <TableCell>{t.employee.colActions}</TableCell>
@@ -237,6 +238,10 @@ function Employee() {
                   </TableCell>
                   <TableCell sx={{ color: "#6b7280 !important" }}>
                     {t.employee.positions[emp.position]}
+                  </TableCell>
+                  {/* 雇佣类型：正社员蓝色、兼职灰色 */}
+                  <TableCell>
+                    <span className={`typeTag ${emp.employment}`}>{t.employee.employment[emp.employment]}</span>
                   </TableCell>
                   <TableCell sx={{ color: "#6b7280 !important" }}>
                     {emp.phone}
@@ -285,7 +290,7 @@ function Employee() {
               {/* 搜索不到时显示空状态 */}
               {pageItems.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={6} align="center" sx={{ py: 5, color: "#8c96a0 !important" }}>
+                  <TableCell colSpan={7} align="center" sx={{ py: 5, color: "#8c96a0 !important" }}>
                     {t.employee.empty}
                   </TableCell>
                 </TableRow>

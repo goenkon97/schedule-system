@@ -376,55 +376,242 @@
 
 }
 
+
 /* =========================
-   每个班次需要的人数
+   每天需要的正社员人数（第 1 步右边）
 ========================= */
 
-.requiredBox {
+.staffingBox {
     margin-top: 18px;
-    padding: 14px 16px;
-
-    border: 1px solid #e5e7eb;
-    border-radius: 12px;
-
-    background: #f9fafb;
+    padding: 16px;
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    background: #fafbfc;
 }
 
-.requiredBox strong {
+.staffingBox > strong {
+    display: block;
+    font-size: 14px;
+    color: var(--text);
+}
+
+.staffingHint {
+    margin: 4px 0 10px;
+    font-size: 12.5px;
+    line-height: 1.6;
+    color: var(--text2);
+}
+
+.staffingRow {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 10px 0;
+    border-top: 1px solid #eef1f5;
+}
+
+.staffingLabel b {
+    display: block;
+    font-size: 14px;
+    color: var(--text);
+}
+
+.staffingLabel small {
+    font-size: 12px;
+    color: var(--text2);
+}
+
+.staffingControl {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+/* + − 步进器 */
+.stepper {
+    display: inline-flex;
+    align-items: center;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: #fff;
+    overflow: hidden;
+}
+
+.stepper button {
+    display: grid;
+    place-items: center;
+    width: 32px;
+    height: 32px;
+    border: none;
+    background: transparent;
+    color: var(--text);
+    cursor: pointer;
+}
+
+.stepper button:hover:not(:disabled) {
+    background: var(--primary-soft);
+    color: var(--primary);
+}
+
+.stepper button:disabled {
+    color: #cbd5e1;
+    cursor: not-allowed;
+}
+
+.stepper span {
+    min-width: 30px;
+    text-align: center;
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--text);
+}
+
+/* 够用 / 缺几名 的小标签 */
+.staffingBadge {
+    min-width: 64px;
+    padding: 3px 8px;
+    border-radius: 999px;
+    text-align: center;
+    font-size: 12px;
+    font-weight: 600;
+    color: #15803d;
+    background: #dcfce7;
+}
+
+.staffingBadge.isShort {
+    color: #b91c1c;
+    background: #fee2e2;
+}
+
+/* =========================
+   第 2 步：预览
+========================= */
+
+.previewContent {
+    padding: 0 28px;
+}
+
+.previewSummary {
+    margin-bottom: 12px;
+    padding: 10px 14px;
+    border-radius: 10px;
+    font-size: 13.5px;
+    font-weight: 600;
+    color: #15803d;
+    background: #f0fdf4;
+}
+
+.previewSummary.isShort {
+    color: #b91c1c;
+    background: #fef2f2;
+}
+
+.previewTable {
+    max-height: 420px;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+}
+
+.previewTable .weekendRow {
+    background: #fafbff;
+}
+
+.previewDate {
+    display: block;
+    font-weight: 600;
+    color: var(--text);
+}
+
+.previewWeekday {
+    font-size: 12px;
+    color: var(--text2);
+}
+
+.previewWeekday.weekend {
+    color: var(--primary);
+}
+
+.nameChips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.nameChip {
+    padding: 3px 9px;
+    border-radius: 999px;
+    font-size: 12.5px;
+    font-weight: 500;
+    white-space: nowrap;
+}
+
+.nameChip.Kitchen {
+    color: #9a3412;
+    background: #fff7ed;
+}
+
+.nameChip.Hall {
+    color: #1e40af;
+    background: #eff6ff;
+}
+
+.nameChip.empty {
+    color: #dc2626;
+    background: transparent;
+    border: 1px dashed #fca5a5;
+}
+
+.nameChip b {
+    margin-left: 4px;
+    font-weight: 700;
+}
+
+.statusOk {
+    font-size: 12.5px;
+    font-weight: 600;
+    color: #16a34a;
+}
+
+.statusShort {
+    font-size: 12.5px;
+    font-weight: 600;
+    color: #dc2626;
+}
+
+.daysSummary {
+    margin-top: 14px;
+    padding: 14px 16px;
+    border-radius: 12px;
+    background: #fafbfc;
+    border: 1px solid var(--border);
+}
+
+.daysSummary > strong {
     display: block;
     margin-bottom: 8px;
-
-    font-size: 13px;
-    color: #111827;
+    font-size: 13.5px;
+    color: var(--text);
 }
 
-.requiredTable {
-    width: 100%;
-    border-collapse: collapse;
-    font-size: 13px;
+.daysRow {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 6px 0;
 }
 
-.requiredTable th,
-.requiredTable td {
-    padding: 6px 4px;
-    text-align: center;
-    border-top: 1px solid #eef0f3;
-}
-
-.requiredTable th {
-    border-top: none;
+.daysDept {
+    flex: none;
+    width: 64px;
+    font-size: 12.5px;
     font-weight: 600;
-    color: #6b7280;
+    color: var(--text2);
+    padding-top: 3px;
 }
 
-.requiredTable td:first-child {
-    text-align: left;
-    font-weight: 600;
-    color: #374151;
-}
-
-.requiredTable td small {
-    display: block;
-    font-weight: 400;
-    color: #9ca3af;
+.cancelButton.withIcon {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
 }

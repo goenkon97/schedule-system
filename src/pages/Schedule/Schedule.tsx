@@ -15,6 +15,8 @@ export interface GenerateScheduleData {
   year: number;
   month: number;                 // 1 ~ 12（给人看的月份）
   excludedEmployees: number[];   // 不参加排班的员工 id
+  kitchenPerDay: number;         // 厨房每天需要几名正社员
+  hallPerDay: number;            // 服务员每天需要几名正社员
 }
 
 // 部门筛选：全部，或某一个部门
