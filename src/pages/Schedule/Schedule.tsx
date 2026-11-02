@@ -15,6 +15,8 @@ import AddIcon from "@mui/icons-material/Add";
 import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
 import ChevronRightIcon from "@mui/icons-material/ChevronRight";
 import CloudUploadOutlinedIcon from "@mui/icons-material/CloudUploadOutlined";
+import DeleteOutlineIcon from "@mui/icons-material/DeleteOutlined";
+import Dialog from "@mui/material/Dialog";
 import Tooltip from "@mui/material/Tooltip";
 import Snackbar from "@mui/material/Snackbar";
 import Alert from "@mui/material/Alert";
@@ -30,6 +32,7 @@ import type { FullTimeSettings, ScheduleResult } from "../../data/fullTimeSchedu
 import {
   buildMonthSchedule,
   loadSchedules,
+  mockApi,
   monthFromToday,
   monthKey,
   saveSchedules,
@@ -84,6 +87,7 @@ function Schedule() {
   const [editingDay, setEditingDay] = useState<number | null>(null);   // 正在看 / 改第几天
   const [dept, setDept] = useState<DeptFilter>("all");
   const [toast, setToast] = useState("");
+  const [confirmClear, setConfirmClear] = useState(false);   // 「清除班表」的确认框
 
   // 月份标题：en → "December 2026"，zh / ja → "2026年12月"
   const monthTitle = new Date(year, month - 1, 1).toLocaleString(locale, { year: "numeric", month: "long" });
@@ -115,8 +119,35 @@ function Schedule() {
     if (!current) return;
     const payload = { ...current, status: "submitted" as const, updatedAt: new Date().toISOString() };
     console.log("Submit schedule →", payload);              // 提交给后端的就是这个对象
+    mockApi.submit(payload);                                 // 模拟接口：存进「后台」
     setSchedules((prev) => ({ ...prev, [key]: payload }));
     setToast(t.schedule.submittedToast);
+  };
+
+  // 清除班表：
+  //   - 草稿（没提交）：只清除本地的修改。后台有提交过的版本 → 恢复成那个版本；没有 → 这个月变成空的
+  //   - 已提交：调用删除接口，把后台里这个月的班表删掉，本地也一起删掉
+  const serverCopy = current ? mockApi.get(key) : undefined;
+  const clearSchedule = () => {
+    if (!current) return;
+    if (current.status === "draft") {
+      setSchedules((prev) => {
+        const next = { ...prev };
+        if (serverCopy) next[key] = serverCopy;               // 恢复成上次提交的版本
+        else delete next[key];                                // 从没提交过：直接删掉
+        return next;
+      });
+      setToast(t.schedule.clearedLocal);
+    } else {
+      mockApi.remove(key);                                    // 以后换成 DELETE /api/schedules/2026-11
+      setSchedules((prev) => {
+        const next = { ...prev };
+        delete next[key];
+        return next;
+      });
+      setToast(t.schedule.clearedServer);
+    }
+    setConfirmClear(false);
   };
 
   // 新建排班：弹窗确认后，把算好的结果变成一个月的班表对象，并切换到那个月
@@ -186,6 +217,14 @@ function Schedule() {
             <button className="submitButton" onClick={submit}>
               <CloudUploadOutlinedIcon fontSize="small" />
               {t.schedule.submit}
+            </button>
+          )}
+
+          {/* 清除班表：有班表时店长才看得到；点了先弹确认框 */}
+          {canEdit && current && (
+            <button className="clearButton" onClick={() => setConfirmClear(true)}>
+              <DeleteOutlineIcon fontSize="small" />
+              {t.schedule.clear}
             </button>
           )}
         </div>
@@ -310,6 +349,26 @@ function Schedule() {
           onSave={(day) => saveDay(editingDay, day)}
           onClose={() => setEditingDay(null)}
         />
+      )}
+
+      {/* 清除班表的确认框：草稿和已提交的说明不一样 */}
+      {current && (
+        <Dialog open={confirmClear} onClose={() => setConfirmClear(false)} maxWidth="xs" fullWidth>
+          <div className="confirmBox">
+            <h3>{current.status === "draft" ? t.schedule.clearDraftTitle : t.schedule.clearSubmittedTitle}</h3>
+            <p>
+              {current.status === "draft"
+                ? (serverCopy ? t.schedule.clearDraftRestore : t.schedule.clearDraftDelete)
+                : t.schedule.clearSubmittedDesc(monthTitle)}
+            </p>
+            <div className="confirmActions">
+              <button className="confirmCancel" onClick={() => setConfirmClear(false)}>{t.dayEditor.cancel}</button>
+              <button className="confirmDanger" onClick={clearSchedule}>
+                {current.status === "draft" ? t.schedule.clearConfirm : t.schedule.deleteConfirm}
+              </button>
+            </div>
+          </div>
+        </Dialog>
       )}
 
       <Snackbar open={!!toast} autoHideDuration={3500} onClose={() => setToast("")} anchorOrigin={{ vertical: "bottom", horizontal: "center" }}>

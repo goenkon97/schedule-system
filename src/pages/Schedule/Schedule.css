@@ -762,3 +762,113 @@
   outline: 1.5px dashed currentColor;
   outline-offset: -1.5px;
 }
+
+/* =====================================================
+   工具栏：所有控件统一 42px 高
+===================================================== */
+
+/* 部门下拉框：去掉浏览器原生样式（Safari 会忽略 padding，导致文字和箭头歪），自己画箭头 */
+.scheduleFilter {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 42px;
+  width: 200px;
+  padding: 0 38px 0 14px;
+  border-radius: 10px;
+  line-height: 40px;
+  font-weight: 500;
+  background-color: #fff;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath d='M2.5 4.5 6 8l3.5-3.5' fill='none' stroke='%2364748B' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 14px center;
+  outline: none;
+}
+
+.scheduleFilter:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+}
+
+.navBtn {
+  width: 42px;
+  height: 42px;
+}
+
+.monthNav .currentMonth {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 42px;
+  padding: 0 18px;
+  border-radius: 10px;
+}
+
+/* 清除班表：白底红字，表示「危险操作」，但不抢「提交」的风头 */
+.clearButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 42px;
+  padding: 0 14px;
+  border: 1px solid #fecaca;
+  border-radius: 10px;
+  background: #fff;
+  color: #dc2626;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.clearButton:hover {
+  background: #fef2f2;
+}
+
+/* 确认框 */
+.confirmBox {
+  padding: 24px;
+}
+
+.confirmBox h3 {
+  font-size: 18px;
+  color: var(--text);
+}
+
+.confirmBox p {
+  margin-top: 8px;
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--text2);
+}
+
+.confirmActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 22px;
+}
+
+.confirmCancel,
+.confirmDanger {
+  height: 40px;
+  padding: 0 18px;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.confirmCancel {
+  border: 1px solid var(--border);
+  background: #fff;
+  color: var(--text);
+}
+
+.confirmDanger {
+  border: none;
+  background: #dc2626;
+  color: #fff;
+}
+
+.confirmDanger:hover {
+  background: #b91c1c;
+}

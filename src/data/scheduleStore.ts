@@ -6,8 +6,10 @@
 //   提交班表 → POST /api/schedules   body = 一个 MonthSchedule
 //   查看班表 → GET  /api/schedules?month=2026-12 → 返回一个 MonthSchedule
 //
-// 现在后端还没写，所以先存在浏览器的 localStorage 里（刷新页面不会丢）。
-// 以后只要把 loadSchedules / saveSchedules 换成调用接口，页面代码不用改。
+// 现在后端还没写，所以用浏览器的 localStorage 模拟两个地方：
+//   - 本地（STORAGE_KEY）：页面上正在看 / 正在改的班表，包括还没提交的草稿
+//   - 后台（SERVER_KEY）：「提交」之后的班表，相当于数据库里的数据，由 mockApi 读写
+// 以后只要把 mockApi 里的几个函数换成 fetch 调真正的接口，页面代码不用改。
 // =====================================================
 
 import type { ShiftType } from "../i18n/translations";
@@ -120,17 +122,70 @@ export function loadSchedules(): ScheduleMap {
   }
 
   // 演示用：这个月如果还没有班表，就当作「上个月已经排好并提交了」，自动生成一份
+  // （第一次打开时才放；之后被店长清除了就不再自动生成，这样「清除」才看得到效果）
+  const SEEDED_KEY = "schedule-system-seeded";
   const { year, month } = monthFromToday(0);
   const key = monthKey(year, month);
-  if (!map[key]) {
+  let seeded = false;
+  try { seeded = localStorage.getItem(SEEDED_KEY) === key; } catch { /* 忽略 */ }
+  // 已经有这个月的班表（以前打开过）：也记成「放过了」，清除后刷新不会又冒出来
+  if (map[key] && !seeded) {
+    try { localStorage.setItem(SEEDED_KEY, key); } catch { /* 忽略 */ }
+    seeded = true;
+  }
+  if (!map[key] && !seeded) {
     map[key] = buildMonthSchedule(
       year, month, DEFAULT_SETTINGS,
       generateFullTimeSchedule(year, month - 1, DEFAULT_SETTINGS),
       "", "submitted"
     );
+    mockApi.submit(map[key]);              // 「已提交」的班表，后台里也要有一份
+    try { localStorage.setItem(SEEDED_KEY, key); } catch { /* 忽略 */ }
   }
   return map;
 }
+
+// ---------- 模拟的后台接口 ----------
+// 以后分别换成：
+//   submit → fetch("/api/schedules", { method: "POST", body: JSON.stringify(s) })
+//   remove → fetch(`/api/schedules/${id}`, { method: "DELETE" })
+//   get    → fetch(`/api/schedules/${id}`)
+const SERVER_KEY = "schedule-system-server";
+
+function readServer(): ScheduleMap {
+  try {
+    return JSON.parse(localStorage.getItem(SERVER_KEY) || "{}") as ScheduleMap;
+  } catch {
+    return {};
+  }
+}
+
+function writeServer(map: ScheduleMap) {
+  try {
+    localStorage.setItem(SERVER_KEY, JSON.stringify(map));
+  } catch {
+    // 忽略
+  }
+}
+
+export const mockApi = {
+  // 提交一个月的班表（同一个月再提交就覆盖）
+  submit(s: MonthSchedule) {
+    const server = readServer();
+    server[s.id] = s;
+    writeServer(server);
+  },
+  // 删除后台里某个月的班表
+  remove(id: string) {
+    const server = readServer();
+    delete server[id];
+    writeServer(server);
+  },
+  // 读后台里某个月的班表（没有就是 undefined）
+  get(id: string): MonthSchedule | undefined {
+    return readServer()[id];
+  },
+};
 
 export function saveSchedules(map: ScheduleMap) {
   try {
