@@ -33,7 +33,9 @@ import {
   monthFromToday,
   monthKey,
   saveSchedules,
+  workingIds,
   type DayEntry,
+  type ShiftStaff,
   type ScheduleMap,
 } from "../../data/scheduleStore";
 
@@ -50,6 +52,13 @@ type DeptFilter = Department | "all";
 
 const byId = new Map(employees.map((e) => [e.id, e]));
 const initials = (name: string) => name.split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase();
+
+// 某个部门这一天：缺几人（白班、晚班里缺得多的那个）
+const shortOf = (s: ShiftStaff, need: number) => Math.max(0, need - s.day.length, need - s.evening.length);
+
+// 只上了半天的人（只在白班或只在晚班）
+const halfShift = (s: ShiftStaff, id: number): "day" | "evening" | null =>
+  s.day.includes(id) && !s.evening.includes(id) ? "day" : s.evening.includes(id) && !s.day.includes(id) ? "evening" : null;
 
 // 最多能看几个月：当前月 + 后面 2 个月
 const MAX_OFFSET = 2;
@@ -230,8 +239,8 @@ function Schedule() {
 
             {current.days.slice(0, daysInMonth).map((d, i) => {
               const weekday = (firstWeekday + i) % 7;
-              const kShort = showKitchen ? current.settings.kitchenPerDay - d.kitchen.length : 0;
-              const hShort = showHall ? current.settings.hallPerDay - d.hall.length : 0;
+              const kShort = showKitchen ? shortOf(d.kitchen, current.settings.kitchenPerDay) : 0;
+              const hShort = showHall ? shortOf(d.hall, current.settings.hallPerDay) : 0;
               const isShort = kShort > 0 || hShort > 0;
               const isToday = offset === 0 && i + 1 === today.getDate();
 
@@ -245,14 +254,29 @@ function Schedule() {
 
                   {showKitchen && (
                     <div className="calDots">
-                      {d.kitchen.map((id) => <i className="calDot Kitchen" key={id} title={byId.get(id)?.name}>{initials(byId.get(id)!.name)}</i>)}
+                      {/* 一个人画一个圆点；只上了白班或晚班的人，圆点半透明，并在提示里注明 */}
+                      {workingIds(d.kitchen).map((id) => {
+                        const half = halfShift(d.kitchen, id);
+                        return (
+                          <i className={`calDot Kitchen ${half ? "half" : ""}`} key={id} title={`${byId.get(id)?.name}${half ? ` · ${t.shifts[half]}` : ""}`}>
+                            {initials(byId.get(id)!.name)}
+                          </i>
+                        );
+                      })}
                       {Array.from({ length: Math.max(0, kShort) }, (_, k) => <i className="calDot empty" key={`k${k}`} />)}
                     </div>
                   )}
 
                   {showHall && (
                     <div className="calDots">
-                      {d.hall.map((id) => <i className="calDot Hall" key={id} title={byId.get(id)?.name}>{initials(byId.get(id)!.name)}</i>)}
+                      {workingIds(d.hall).map((id) => {
+                        const half = halfShift(d.hall, id);
+                        return (
+                          <i className={`calDot Hall ${half ? "half" : ""}`} key={id} title={`${byId.get(id)?.name}${half ? ` · ${t.shifts[half]}` : ""}`}>
+                            {initials(byId.get(id)!.name)}
+                          </i>
+                        );
+                      })}
                       {Array.from({ length: Math.max(0, hShort) }, (_, k) => <i className="calDot empty" key={`h${k}`} />)}
                       {d.partTime.map((p) => (
                         <i className="calDot partTime" key={p.employeeId} title={`${byId.get(p.employeeId)?.name} · ${t.shifts[p.shift]}`}>

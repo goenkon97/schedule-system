@@ -755,3 +755,10 @@
   font-size: 14px;
   color: var(--text2);
 }
+
+/* 只上了半天（白班或晚班）的正社员：圆点变淡 + 虚线边，一眼能看出和全天班不一样 */
+.calDot.half {
+  opacity: 0.55;
+  outline: 1.5px dashed currentColor;
+  outline-offset: -1.5px;
+}

@@ -83,3 +83,19 @@
 .dayEditor .deBtn:hover { background: #f8fafc; }
 .dayEditor .deBtn.primary { border-color: var(--primary); background: var(--primary); color: #fff; }
 .dayEditor .deBtn.primary:hover { background: var(--primary-hover); }
+
+/* 白班 / 晚班 两段 */
+.dayEditor .deShiftBlock {
+  padding: 10px 12px;
+  margin-bottom: 8px;
+  border: 1px solid #eef1f5;
+  border-radius: 12px;
+  background: #fbfcfd;
+}
+.dayEditor .deShiftHead { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+.dayEditor .deShiftName { font-size: 13px; font-weight: 700; }
+.dayEditor .deShiftName small { margin-left: 4px; font-weight: 500; color: var(--text2); }
+.dayEditor .deShiftName.day { color: #b7791f; }
+.dayEditor .deShiftName.evening { color: #4f46e5; }
+.dayEditor .dePeople { align-items: center; }
+.dayEditor .deSelect.inline { margin-top: 0; height: 34px; min-width: 150px; border-style: dashed; }

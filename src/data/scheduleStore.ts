@@ -24,12 +24,22 @@ export interface PartTimeEntry {
   shift: ShiftType;        // 兼职一天只上一个班：day 白班 / evening 晚班
 }
 
+// 正社员按班次分开记：默认白班、晚班都是同一批人（= 全天班），
+// 但分开存以后，可以只把某人的白班或晚班换给别人
+export interface ShiftStaff {
+  day: number[];           // 白班 10:00 - 15:00 的员工 id
+  evening: number[];       // 晚班 17:00 - 23:00 的员工 id
+}
+
 export interface DayEntry {
   date: string;            // "2026-12-01"
-  kitchen: number[];       // 厨房正社员（全天班）的员工 id
-  hall: number[];          // 服务员正社员（全天班）的员工 id
+  kitchen: ShiftStaff;     // 厨房正社员
+  hall: ShiftStaff;        // 服务员正社员
   partTime: PartTimeEntry[]; // 服务员兼职（店长手动填）
 }
+
+// 某个部门这一天上班的人（白班或晚班至少上一个），去重
+export const workingIds = (s: ShiftStaff) => [...new Set([...s.day, ...s.evening])];
 
 // ---------- 一个月的班表 ----------
 export interface MonthSchedule {
@@ -74,7 +84,13 @@ export function buildMonthSchedule(
     month,
     note,
     settings,
-    days: result.days.map((d) => ({ date: d.date, kitchen: [...d.staff.Kitchen], hall: [...d.staff.Hall], partTime: [] })),
+    // 算法排的是全天班 → 白班、晚班放同一批人
+    days: result.days.map((d) => ({
+      date: d.date,
+      kitchen: { day: [...d.staff.Kitchen], evening: [...d.staff.Kitchen] },
+      hall: { day: [...d.staff.Hall], evening: [...d.staff.Hall] },
+      partTime: [],
+    })),
     status,
     updatedAt: new Date().toISOString(),
   };
@@ -92,6 +108,15 @@ export function loadSchedules(): ScheduleMap {
     if (raw) map = JSON.parse(raw) as ScheduleMap;
   } catch {
     map = {};
+  }
+
+  // 兼容旧数据：以前正社员是一个数组（全天班），现在拆成白班 / 晚班
+  for (const s of Object.values(map)) {
+    s.days = s.days.map((d) => {
+      const old = d as unknown as { kitchen: number[] | ShiftStaff; hall: number[] | ShiftStaff };
+      const fix = (v: number[] | ShiftStaff): ShiftStaff => (Array.isArray(v) ? { day: [...v], evening: [...v] } : v);
+      return { ...d, kitchen: fix(old.kitchen), hall: fix(old.hall) };
+    });
   }
 
   // 演示用：这个月如果还没有班表，就当作「上个月已经排好并提交了」，自动生成一份

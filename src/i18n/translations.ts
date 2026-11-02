@@ -209,7 +209,7 @@ const en = {
   },
 
   dayEditor: {
-    fullTime: "Full-time (full day)",
+    fullTime: "Full-time",
     partTime: "Part-time",
     add: "Add",
     addPartTime: "Add part-timer",
@@ -442,7 +442,7 @@ const zh: Dictionary = {
   },
 
   dayEditor: {
-    fullTime: "正社员（全天班）",
+    fullTime: "正社员",
     partTime: "兼职",
     add: "添加",
     addPartTime: "添加兼职",
@@ -671,7 +671,7 @@ const ja: Dictionary = {
   },
 
   dayEditor: {
-    fullTime: "社員（通し）",
+    fullTime: "社員",
     partTime: "アルバイト",
     add: "追加",
     addPartTime: "アルバイトを追加",
