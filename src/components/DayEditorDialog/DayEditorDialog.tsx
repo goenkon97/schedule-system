@@ -20,12 +20,11 @@ import "./DayEditorDialog.css";
 
 import { useLanguage } from "../../i18n/LanguageContext";
 import type { Department, ShiftType } from "../../i18n/translations";
-import { employees } from "../../data/employees";
+import { employees, employeeName } from "../../data/employees";
 import { shiftDefinitions } from "../../data/shifts";
 import { availableFullTime } from "../../data/fullTimeScheduler";
 import { workingIds, type DayEntry, type MonthSchedule } from "../../data/scheduleStore";
 
-const byId = new Map(employees.map((e) => [e.id, e]));
 const initials = (name: string) => name.split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase();
 
 // 部门 → 这一天数据里对应的字段
@@ -138,7 +137,7 @@ export default function DayEditorDialog({
                     <div className="dePeople">
                       {ids.length === 0 && <span className="deEmpty">{t.dayEditor.none}</span>}
                       {ids.map((id) => {
-                        const e = byId.get(id)!;
+                        const e = { name: employeeName(id) };
                         return (
                           <span className={`dePerson ${dept}`} key={id}>
                             <i>{initials(e.name)}</i>
@@ -181,7 +180,7 @@ export default function DayEditorDialog({
             <div className="dePeople">
               {day.partTime.length === 0 && <span className="deEmpty">{t.dayEditor.none}</span>}
               {day.partTime.map((p) => {
-                const e = byId.get(p.employeeId)!;
+                const e = { name: employeeName(p.employeeId) };
                 const s = timeOf(p.shift);
                 return (
                   <span className="dePerson partTime" key={p.employeeId}>

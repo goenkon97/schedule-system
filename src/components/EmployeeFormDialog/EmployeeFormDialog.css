@@ -1,0 +1,76 @@
+/* 添加 / 编辑员工弹窗（选择器都以 .empForm 开头，避免和别的页面冲突） */
+
+.empForm { display: flex; flex-direction: column; max-height: calc(100vh - 64px); }
+
+/* ---------- 标题 ---------- */
+.empForm .efHeader {
+  display: flex; justify-content: space-between; align-items: flex-start; gap: 12px;
+  padding: 22px 24px 14px; border-bottom: 1px solid var(--border);
+}
+.empForm .efHeader h2 { font-size: 20px; letter-spacing: -0.01em; color: var(--text); }
+.empForm .efHeader p { margin-top: 4px; font-size: 13px; line-height: 1.5; color: var(--text2); }
+
+.empForm .efClose {
+  flex-shrink: 0; display: grid; place-items: center; width: 34px; height: 34px;
+  border: none; border-radius: 8px; background: transparent; color: var(--text2); cursor: pointer;
+}
+.empForm .efClose:hover { background: #f1f5f9; }
+
+/* ---------- 内容 ---------- */
+.empForm .efBody {
+  flex: 1; min-height: 0; overflow-y: auto;
+  display: flex; flex-direction: column; gap: 18px;
+  padding: 20px 24px;
+}
+
+/* 一行两个字段；手机上变成一列 */
+.empForm .efRow { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+@media (max-width: 560px) { .empForm .efRow { grid-template-columns: 1fr; } }
+
+.empForm .efField { display: flex; flex-direction: column; gap: 7px; min-width: 0; }
+.empForm .efField > span { font-size: 13px; font-weight: 600; color: var(--text); }
+.empForm .efField > span b { color: #dc2626; font-weight: 600; }
+
+.empForm .efField input {
+  height: 42px; padding: 0 12px;
+  border: 1px solid var(--border); border-radius: 8px; background: #fff;
+  font-size: 14px; color: var(--text); outline: none;
+}
+.empForm .efField input::placeholder { color: #a0aab4; }
+.empForm .efField input:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12); }
+.empForm .efField input.hasError { border-color: #dc2626; }
+.empForm .efField input.hasError:focus { box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.12); }
+
+.empForm .efError { font-size: 12px; color: #dc2626; }
+.empForm .efHint { font-size: 12px; line-height: 1.5; color: var(--text2); }
+
+/* 分段选择按钮：像 iOS 的 segmented control */
+.empForm .efSegment {
+  display: flex; gap: 4px; padding: 4px;
+  background: #f1f5f9; border-radius: 10px;
+}
+.empForm .efSegment button {
+  flex: 1; height: 34px; padding: 0 10px;
+  border: none; border-radius: 7px; background: transparent;
+  font-size: 13px; font-weight: 500; color: var(--text2); cursor: pointer; white-space: nowrap;
+}
+.empForm .efSegment button:hover:not(:disabled):not(.active) { color: var(--text); }
+.empForm .efSegment button.active {
+  background: #fff; color: var(--primary); font-weight: 600;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.12);
+}
+.empForm .efSegment button:disabled { color: #c3cbd4; cursor: not-allowed; }
+
+/* ---------- 底部 ---------- */
+.empForm .efFooter {
+  display: flex; justify-content: flex-end; gap: 10px;
+  padding: 14px 24px; border-top: 1px solid var(--border);
+}
+.empForm .efBtn {
+  height: 40px; padding: 0 20px; border-radius: 10px;
+  border: 1px solid var(--border); background: #fff;
+  font-size: 14px; font-weight: 500; color: var(--text); cursor: pointer;
+}
+.empForm .efBtn:hover { background: #f8fafc; }
+.empForm .efBtn.primary { border: none; background: var(--primary); color: #fff; }
+.empForm .efBtn.primary:hover { filter: brightness(1.06); }

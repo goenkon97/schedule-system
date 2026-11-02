@@ -82,8 +82,14 @@
   color: #fff;
 }
 
-.Employee .primaryButton:hover {
+.Employee .primaryButton:hover:not(:disabled) {
   background: #1d4ed8;
+}
+
+/* 员工账号：添加按钮变灰 */
+.Employee .primaryButton:disabled {
+  background: #cbd5e1;
+  cursor: not-allowed;
 }
 
 .Employee .outlineButton {
@@ -157,4 +163,14 @@
 .Employee .typeTag.partTime {
   color: #475569;
   background: #f1f5f9;
+}
+
+/* ========== 刚添加 / 修改的行：淡蓝色闪一下 ========== */
+@keyframes employeeRowFlash {
+  0%   { background: rgba(37, 99, 235, 0.14); }
+  100% { background: transparent; }
+}
+
+.Employee .rowFlash td {
+  animation: employeeRowFlash 2s ease-out;
 }

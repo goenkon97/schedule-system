@@ -27,7 +27,7 @@ import { useLanguage } from "../../i18n/LanguageContext";
 import { useAuth } from "../../auth/AuthContext";
 import type { Department } from "../../i18n/translations";
 
-import { employees } from "../../data/employees";
+import { employeeName } from "../../data/employees";
 import type { FullTimeSettings, ScheduleResult } from "../../data/fullTimeScheduler";
 import {
   buildMonthSchedule,
@@ -53,7 +53,6 @@ export interface GenerateScheduleData extends FullTimeSettings {
 // 部门筛选：全部，或某一个部门
 type DeptFilter = Department | "all";
 
-const byId = new Map(employees.map((e) => [e.id, e]));
 const initials = (name: string) => name.split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase();
 
 // 某个部门这一天：缺几人（白班、晚班里缺得多的那个）
@@ -297,8 +296,8 @@ function Schedule() {
                       {workingIds(d.kitchen).map((id) => {
                         const half = halfShift(d.kitchen, id);
                         return (
-                          <i className={`calDot Kitchen ${half ? "half" : ""}`} key={id} title={`${byId.get(id)?.name}${half ? ` · ${t.shifts[half]}` : ""}`}>
-                            {initials(byId.get(id)!.name)}
+                          <i className={`calDot Kitchen ${half ? "half" : ""}`} key={id} title={`${employeeName(id)}${half ? ` · ${t.shifts[half]}` : ""}`}>
+                            {initials(employeeName(id))}
                           </i>
                         );
                       })}
@@ -311,15 +310,15 @@ function Schedule() {
                       {workingIds(d.hall).map((id) => {
                         const half = halfShift(d.hall, id);
                         return (
-                          <i className={`calDot Hall ${half ? "half" : ""}`} key={id} title={`${byId.get(id)?.name}${half ? ` · ${t.shifts[half]}` : ""}`}>
-                            {initials(byId.get(id)!.name)}
+                          <i className={`calDot Hall ${half ? "half" : ""}`} key={id} title={`${employeeName(id)}${half ? ` · ${t.shifts[half]}` : ""}`}>
+                            {initials(employeeName(id))}
                           </i>
                         );
                       })}
                       {Array.from({ length: Math.max(0, hShort) }, (_, k) => <i className="calDot empty" key={`h${k}`} />)}
                       {d.partTime.map((p) => (
-                        <i className="calDot partTime" key={p.employeeId} title={`${byId.get(p.employeeId)?.name} · ${t.shifts[p.shift]}`}>
-                          {initials(byId.get(p.employeeId)!.name)}
+                        <i className="calDot partTime" key={p.employeeId} title={`${employeeName(p.employeeId)} · ${t.shifts[p.shift]}`}>
+                          {initials(employeeName(p.employeeId))}
                         </i>
                       ))}
                     </div>

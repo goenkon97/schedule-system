@@ -28,7 +28,7 @@ import "./CreateScheduleDialog.css";
 
 import { useLanguage } from "../../i18n/LanguageContext";
 import type { Department } from "../../i18n/translations";
-import { employees } from "../../data/employees";
+import { employeeName } from "../../data/employees";
 import {
   DEFAULT_SETTINGS,
   availableFullTime,
@@ -49,8 +49,6 @@ const shortName = (name: string) => {
   return last ? `${first} ${last[0]}.` : first;
 };
 
-// id → 员工，预览表格里用
-const byId = new Map(employees.map((e) => [e.id, e]));
 
 const DEPTS: Department[] = ["Kitchen", "Hall"];
 
@@ -288,7 +286,7 @@ function CreateScheduleDialog({
                     {DEPTS.map((dept) => (
                       <div className="pvRow" key={dept}>
                         {d.staff[dept].map((id) => {
-                          const e = byId.get(id)!;
+                          const e = { name: employeeName(id) };
                           return (
                             <Tooltip title={`${e.name} · ${t.departments[dept]}`} key={id} arrow>
                               <span className={`pvDot ${dept}`}>{initials(e.name)}</span>

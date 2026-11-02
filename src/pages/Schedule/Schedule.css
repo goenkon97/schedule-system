@@ -823,52 +823,5 @@
   background: #fef2f2;
 }
 
-/* 确认框 */
-.confirmBox {
-  padding: 24px;
-}
+/* 确认框的样式已移到 src/index.css（排班页、员工页共用） */
 
-.confirmBox h3 {
-  font-size: 18px;
-  color: var(--text);
-}
-
-.confirmBox p {
-  margin-top: 8px;
-  font-size: 14px;
-  line-height: 1.6;
-  color: var(--text2);
-}
-
-.confirmActions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 10px;
-  margin-top: 22px;
-}
-
-.confirmCancel,
-.confirmDanger {
-  height: 40px;
-  padding: 0 18px;
-  border-radius: 10px;
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-}
-
-.confirmCancel {
-  border: 1px solid var(--border);
-  background: #fff;
-  color: var(--text);
-}
-
-.confirmDanger {
-  border: none;
-  background: #dc2626;
-  color: #fff;
-}
-
-.confirmDanger:hover {
-  background: #b91c1c;
-}

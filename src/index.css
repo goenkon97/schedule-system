@@ -236,3 +236,57 @@ h5 {
 .scheduleFooter:hover {
   background: #f8faff;
 }
+
+/* =====================================================
+   通用确认框（排班页「清除班表」、员工页「删除员工」共用）
+   MUI Dialog 会渲染到 body 下面，不在页面的 div 里，
+   所以这些样式放在全局，不加页面前缀
+===================================================== */
+.confirmBox {
+  padding: 24px;
+}
+
+.confirmBox h3 {
+  font-size: 18px;
+  color: var(--text);
+}
+
+.confirmBox p {
+  margin-top: 8px;
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--text2);
+}
+
+.confirmActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 22px;
+}
+
+.confirmCancel,
+.confirmDanger {
+  height: 40px;
+  padding: 0 18px;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.confirmCancel {
+  border: 1px solid var(--border);
+  background: #fff;
+  color: var(--text);
+}
+
+.confirmDanger {
+  border: none;
+  background: #dc2626;
+  color: #fff;
+}
+
+.confirmDanger:hover {
+  background: #b91c1c;
+}

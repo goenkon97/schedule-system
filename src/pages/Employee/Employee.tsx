@@ -5,9 +5,14 @@
 // 功能：
 // 1. 搜索（姓名 / 部门 / 职位 / 电话）
 // 2. 分页（每页 6 人）
-// 3. 删除（目前只删前端 state 里的数据，刷新后恢复）
-// 4. 导出 CSV（导出当前搜索结果）
-// 5. 添加 / 编辑：先占位，等后端一起做
+// 3. 添加 / 编辑：弹窗 EmployeeFormDialog（同一个组件，两种模式）
+// 4. 删除：先弹确认框，确认后再删
+// 5. 导出 CSV（导出当前搜索结果）
+//
+// 增删改查都走 employeeApi（data/employees.ts），现在存在浏览器里，
+// 刷新页面数据还在；以后接后端只改 employeeApi 里面，这个页面不用动。
+//
+// 权限：只有店长能添加 / 编辑 / 删除，员工账号只能看和导出
 //
 // 表格部分使用 MUI 组件：
 // TableContainer / Table / TableHead / TableBody / TableRow / TableCell
@@ -15,7 +20,7 @@
 // 底部的 Pagination（分页）
 // =====================================================
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 // ---------- MUI 组件 ----------
 import TableContainer from "@mui/material/TableContainer";
@@ -29,6 +34,9 @@ import Chip from "@mui/material/Chip";
 import IconButton from "@mui/material/IconButton";
 import Tooltip from "@mui/material/Tooltip";
 import Pagination from "@mui/material/Pagination";
+import Dialog from "@mui/material/Dialog";
+import Snackbar from "@mui/material/Snackbar";
+import Alert from "@mui/material/Alert";
 
 // ---------- 图标 ----------
 import SearchIcon from "@mui/icons-material/Search";
@@ -38,7 +46,9 @@ import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutlined";
 
 import { useLanguage } from "../../i18n/LanguageContext";
-import { employees as mockEmployees, type Employee as EmployeeData } from "../../data/employees";
+import { useAuth } from "../../auth/AuthContext";
+import { employeeApi, type Employee as EmployeeData, type EmployeeInput } from "../../data/employees";
+import EmployeeFormDialog from "../../components/EmployeeFormDialog/EmployeeFormDialog";
 import type { EmployeeStatus } from "../../i18n/translations";
 import { tableSx, avatarSx } from "../../components/DataTable/tableStyles";
 import "./Employee.css";
@@ -65,9 +75,28 @@ function getInitials(name: string) {
 function Employee() {
 
   const { t } = useLanguage();
+  const { user } = useAuth();
 
-  // 员工列表放进 state：这样删除后页面会重新渲染
-  const [list, setList] = useState<EmployeeData[]>(mockEmployees);
+  // 只有店长能添加、编辑、删除
+  const canEdit = user?.role === "manager";
+
+  // 员工列表放进 state：增删改之后页面会重新渲染
+  const [list, setList] = useState<EmployeeData[]>([]);
+
+  // 第一次打开页面时“调接口”拿员工列表（以后就是 GET /api/employees）
+  useEffect(() => {
+    employeeApi.list().then(setList);
+  }, []);
+
+  // 弹窗状态：
+  // formTarget = null 不显示；"new" 添加；某个员工对象 = 编辑这个人
+  const [formTarget, setFormTarget] = useState<EmployeeData | "new" | null>(null);
+  // 准备删除的人（显示确认框）
+  const [deleting, setDeleting] = useState<EmployeeData | null>(null);
+  // 底部提示条的文字
+  const [toast, setToast] = useState("");
+  // 刚添加 / 修改的那一行，短暂高亮一下，方便看到改了哪里
+  const [highlightId, setHighlightId] = useState<number | null>(null);
 
   // 搜索关键字
   const [keyword, setKeyword] = useState("");
@@ -114,13 +143,45 @@ function Employee() {
   const from = filtered.length === 0 ? 0 : start + 1;
   const to = start + pageItems.length;
 
+  // 高亮某一行 2 秒
+  const flash = (id: number) => {
+    setHighlightId(id);
+    window.setTimeout(() => setHighlightId((cur) => (cur === id ? null : cur)), 2000);
+  };
+
   // ---------------------------------------------------
-  // 删除
+  // 添加 / 编辑：弹窗里点「添加」或「保存」后调用
   // ---------------------------------------------------
-  const handleDelete = (emp: EmployeeData) => {
-    if (window.confirm(t.employee.deleteConfirm(emp.name))) {
-      setList((prev) => prev.filter((e) => e.id !== emp.id));
+  const handleSubmit = async (input: EmployeeInput) => {
+    if (formTarget === "new") {
+      // 添加：接口返回带新 id 的员工，加到列表最后
+      const created = await employeeApi.create(input);
+      const next = [...list, created];
+      setList(next);
+      // 清空搜索，跳到最后一页，让新加的人马上能看到
+      setKeyword("");
+      setPage(Math.ceil(next.length / PAGE_SIZE));
+      flash(created.id);
+      setToast(t.employee.addedToast(created.name));
+    } else if (formTarget) {
+      // 编辑：用接口返回的数据替换这一行
+      const updated = await employeeApi.update(formTarget.id, input);
+      setList((prev) => prev.map((e) => (e.id === updated.id ? updated : e)));
+      flash(updated.id);
+      setToast(t.employee.updatedToast(updated.name));
     }
+    setFormTarget(null);
+  };
+
+  // ---------------------------------------------------
+  // 删除：确认框里点「删除」后调用
+  // ---------------------------------------------------
+  const handleDelete = async () => {
+    if (!deleting) return;
+    await employeeApi.remove(deleting.id);
+    setList((prev) => prev.filter((e) => e.id !== deleting.id));
+    setToast(t.employee.deletedToast(deleting.name));
+    setDeleting(null);
   };
 
   // ---------------------------------------------------
@@ -131,6 +192,7 @@ function Employee() {
       t.employee.colEmployee,
       t.employee.colDepartment,
       t.employee.colPosition,
+      t.employee.colType,
       t.employee.colPhone,
       t.employee.colStatus,
     ];
@@ -139,6 +201,7 @@ function Employee() {
       e.name,
       t.departments[e.department],
       t.employee.positions[e.position],
+      t.employee.employment[e.employment],
       e.phone,
       t.employee.status[e.status],
     ]);
@@ -184,13 +247,20 @@ function Employee() {
         </div>
 
         <div className="employeeActions">
-          <button
-            className="primaryButton"
-            onClick={() => window.alert(t.employee.addComingSoon)}
-          >
-            <AddIcon />
-            {t.employee.add}
-          </button>
+          {/* 员工账号：按钮变灰，鼠标放上去提示「只有店长可以…」
+              （按钮 disabled 时收不到鼠标事件，所以外面包一层 span 给 Tooltip 用） */}
+          <Tooltip title={canEdit ? "" : t.employee.managerOnly}>
+            <span>
+              <button
+                className="primaryButton"
+                disabled={!canEdit}
+                onClick={() => setFormTarget("new")}
+              >
+                <AddIcon />
+                {t.employee.add}
+              </button>
+            </span>
+          </Tooltip>
 
           <button className="outlineButton" onClick={handleExport}>
             <FileDownloadOutlinedIcon />
@@ -223,7 +293,7 @@ function Employee() {
 
             <TableBody>
               {pageItems.map((emp) => (
-                <TableRow key={emp.id}>
+                <TableRow key={emp.id} className={emp.id === highlightId ? "rowFlash" : ""}>
 
                   {/* 员工：头像 + 名字 */}
                   <TableCell>
@@ -262,25 +332,32 @@ function Employee() {
                     />
                   </TableCell>
 
-                  {/* 操作：编辑 / 删除，鼠标悬停显示 Tooltip 提示文字 */}
+                  {/* 操作：编辑 / 删除，鼠标悬停显示 Tooltip 提示文字
+                      员工账号时按钮变灰，提示只有店长能操作 */}
                   <TableCell>
-                    <Tooltip title={t.employee.edit}>
-                      <IconButton
-                        size="small"
-                        onClick={() => window.alert(t.employee.addComingSoon)}
-                      >
-                        <EditOutlinedIcon fontSize="small" />
-                      </IconButton>
+                    <Tooltip title={canEdit ? t.employee.edit : t.employee.managerOnly}>
+                      <span>
+                        <IconButton
+                          size="small"
+                          disabled={!canEdit}
+                          onClick={() => setFormTarget(emp)}
+                        >
+                          <EditOutlinedIcon fontSize="small" />
+                        </IconButton>
+                      </span>
                     </Tooltip>
 
-                    <Tooltip title={t.employee.delete}>
-                      <IconButton
-                        size="small"
-                        color="error"
-                        onClick={() => handleDelete(emp)}
-                      >
-                        <DeleteOutlineIcon fontSize="small" />
-                      </IconButton>
+                    <Tooltip title={canEdit ? t.employee.delete : t.employee.managerOnly}>
+                      <span>
+                        <IconButton
+                          size="small"
+                          color="error"
+                          disabled={!canEdit}
+                          onClick={() => setDeleting(emp)}
+                        >
+                          <DeleteOutlineIcon fontSize="small" />
+                        </IconButton>
+                      </span>
                     </Tooltip>
                   </TableCell>
 
@@ -320,6 +397,42 @@ function Employee() {
         </div>
 
       </div>
+
+      {/* ========== 添加 / 编辑弹窗 ==========
+          key 不一样时 React 会重新创建组件，表单就会用新的人的数据重新填 */}
+      {formTarget && (
+        <EmployeeFormDialog
+          key={formTarget === "new" ? "new" : formTarget.id}
+          employee={formTarget === "new" ? undefined : formTarget}
+          allEmployees={list}
+          onClose={() => setFormTarget(null)}
+          onSubmit={handleSubmit}
+        />
+      )}
+
+      {/* ========== 删除确认框（样式和排班页的「清除班表」确认框共用） ========== */}
+      <Dialog open={!!deleting} onClose={() => setDeleting(null)} maxWidth="xs" fullWidth>
+        {deleting && (
+          <div className="confirmBox">
+            <h3>{t.employee.deleteConfirm(deleting.name)}</h3>
+            <p>{t.employee.deleteDesc}</p>
+            <div className="confirmActions">
+              <button className="confirmCancel" onClick={() => setDeleting(null)}>{t.employee.cancel}</button>
+              <button className="confirmDanger" onClick={handleDelete}>{t.employee.deleteAction}</button>
+            </div>
+          </div>
+        )}
+      </Dialog>
+
+      {/* ========== 底部提示条 ========== */}
+      <Snackbar
+        open={!!toast}
+        autoHideDuration={3000}
+        onClose={() => setToast("")}
+        anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
+      >
+        <Alert severity="success" variant="filled" onClose={() => setToast("")}>{toast}</Alert>
+      </Snackbar>
 
     </div>
   );
