@@ -1,0 +1,179 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+=====================================================================
+  pom.xml：Maven 项目的「身份证 + 依赖清单 + 打包说明」
+  （相当于前端的 package.json）
+
+  POM = Project Object Model（项目对象模型）
+  Maven 是 Java 世界最常用的「依赖管理 + 构建工具」，它读这个文件来知道：
+    1. 这个项目叫什么、是什么版本（groupId / artifactId / version）
+    2. 要用哪些别人写好的库（dependencies），它会自动去网上下载
+    3. 怎么编译、测试、打包（build）
+
+  底下发生了什么：
+    第一次运行 ./mvnw 时，Maven 会读这个文件，把所有依赖（以及依赖的依赖）
+    下载到你电脑的 ~/.m2/repository 文件夹里（相当于前端的 node_modules，
+    但它放在你的用户目录下，所有 Java 项目共用一份，不在项目里面）。
+    编译好的 .class 文件和打包出来的 .jar 会放在 target/ 文件夹里（相当于前端的 dist/）。
+
+  这是 XML 格式：<标签>内容</标签>，一层套一层；<!- - - -> 之间是注释。
+=====================================================================
+-->
+
+<!-- 最外层的 <project>：固定写法。xmlns 这些属性告诉编辑器「这个 XML 要按 Maven 4.0 的格式检查」，
+     这样写错标签名时 IntelliJ 会提示。内容不用记，每个 Maven 项目都一样。 -->
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+
+	<!-- POM 文件格式本身的版本，固定是 4.0.0（不是项目的版本，也不是 Maven 的版本） -->
+	<modelVersion>4.0.0</modelVersion>
+
+	<!-- ===============================================================
+	     <parent>：继承 Spring Boot 官方准备好的「父 POM」
+
+	     就像 Java 的类继承：父 POM 里已经写好了几百个库的「推荐版本」和一堆默认设置
+	     （编码用 UTF-8、用哪个版本的编译插件……），我们的项目直接继承过来。
+	     所以下面 <dependencies> 里的 Spring 依赖都不用写版本号 ——
+	     版本由这里的 4.1.2 统一决定，保证所有 Spring 的库版本互相兼容。
+	     以后升级 Spring Boot，基本只改这一个数字。
+	     =============================================================== -->
+	<parent>
+		<!-- 父 POM 的「组织名」：Spring Boot 官方 -->
+		<groupId>org.springframework.boot</groupId>
+		<!-- 父 POM 的名字：spring-boot-starter-parent -->
+		<artifactId>spring-boot-starter-parent</artifactId>
+		<!-- Spring Boot 的版本（4.x 是 2025 年底开始的新一代，基于 Spring Framework 7、Java 17+） -->
+		<version>4.1.2</version>
+		<!-- relativePath 留空：不要在本地文件夹里找父 POM，直接去 Maven 中央仓库下载 -->
+		<relativePath/> <!-- lookup parent from repository -->
+	</parent>
+
+	<!-- ===============================================================
+	     我们这个项目自己的「坐标」：groupId + artifactId + version
+	     三个合起来在全世界唯一确定一个 Java 库（就像 npm 的包名 + 版本号）
+	     =============================================================== -->
+	<!-- 组织名：域名倒过来写（goenkon.com → com.goenkon），防止和别人重名 -->
+	<groupId>com.goenkon</groupId>
+	<!-- 项目名：打包出来的文件就叫 schedule-backend-0.0.1-SNAPSHOT.jar -->
+	<artifactId>schedule-backend</artifactId>
+	<!-- 项目版本。SNAPSHOT 的意思是「开发中的版本，还没正式发布」 -->
+	<version>0.0.1-SNAPSHOT</version>
+	<!-- 给人看的名字和说明（原来是空的，这里补上） -->
+	<name>schedule-backend</name>
+	<description>烤肉店排班系统的后端：员工、班表、员工申请、登录与权限</description>
+
+	<!-- ===============================================================
+	     下面这几个「空标签」是 Spring Initializr 故意留的，不要删：
+	     父 POM 里写了 Spring 官方的网址、开源协议（license）、开发者名单、代码仓库地址（scm），
+	     Maven 会把这些也继承过来，我们的项目就会被写成「Spring 官方开发的」。
+	     写一个空标签 = 用「空」覆盖掉父 POM 里的值，不继承它们。
+	     =============================================================== -->
+	<url/>
+	<licenses>
+		<license/>
+	</licenses>
+	<developers>
+		<developer/>
+	</developers>
+	<scm>
+		<connection/>
+		<developerConnection/>
+		<tag/>
+		<url/>
+	</scm>
+
+	<!-- ===============================================================
+	     <properties>：项目里的「变量」，可以在别处用 ${名字} 引用
+	     =============================================================== -->
+	<properties>
+		<!-- 用 Java 21 编译。父 POM 会读这个变量，告诉编译器「按 Java 21 的语法检查和编译」。
+		     必须和你电脑上装的 JDK 版本一致（或者更低），否则编译会报错 -->
+		<java.version>21</java.version>
+	</properties>
+
+	<!-- ===============================================================
+	     <dependencies>：这个项目要用的库（相当于 package.json 的 dependencies）
+
+	     每个依赖用 groupId + artifactId 定位；版本号不用写，由上面的父 POM 统一管理。
+	     名字里带 starter 的是 Spring Boot 的「启动器」：一个 starter 会顺带引入一整套相关的库，
+	     并且自动帮你配置好（这就是 Spring Boot 「开箱即用」的原因）。
+
+	     <scope> 表示这个库「什么时候需要」：
+	       不写      → 编译、运行、测试都需要（默认）
+	       runtime   → 写代码、编译时不需要，只有程序运行时才需要
+	       test      → 只在跑测试时需要，不会打包进最终的 jar
+	     =============================================================== -->
+	<dependencies>
+
+		<!-- Spring Data JPA：用 Java 类代表数据库的表，增删改查不用自己写 SQL
+		     （里面包含 Hibernate：真正把 Java 对象翻译成 SQL 语句的库；
+		       还有 HikariCP：数据库连接池，提前开好几条和 MySQL 的连接，用的时候直接拿，不用每次重新连） -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-data-jpa</artifactId>
+		</dependency>
+
+		<!-- Validation：在类的字段上加 @NotBlank、@Size 这种注解，自动检查请求里的数据对不对
+		     （里面是 Hibernate Validator，Java 官方校验规范 Jakarta Validation 的实现） -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-validation</artifactId>
+		</dependency>
+
+		<!-- Spring Web MVC：让程序能接收 HTTP 请求、返回 JSON（网页上选的 "Spring Web"）
+		     里面自带一个 Tomcat 服务器（一个 Web 服务器程序），所以我们的程序一启动，
+		     就会在 8080 端口上「开门营业」，等浏览器的请求进来。
+		     还带了 Jackson：自动把 Java 对象转成 JSON、把 JSON 转成 Java 对象。
+		     （Spring Boot 4 以前这个依赖叫 spring-boot-starter-web，4.x 改名成了 webmvc） -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-webmvc</artifactId>
+		</dependency>
+
+		<!-- MySQL 驱动：Java 和 MySQL 之间的「翻译官」。
+		     Java 只认识一套标准的数据库接口（JDBC），每种数据库各自提供一个「驱动」来实现这套接口。
+		     scope 是 runtime：我们的代码里不会直接写 MySQL 驱动的类，只有程序跑起来、真正连数据库时才用到 -->
+		<dependency>
+			<groupId>com.mysql</groupId>
+			<artifactId>mysql-connector-j</artifactId>
+			<scope>runtime</scope>
+		</dependency>
+
+		<!-- 下面三个是对应的「测试工具包」，只在跑测试时用（scope = test），不会打包进上线的 jar：
+		     JUnit（写测试的框架）、AssertJ（断言）、MockMvc（不用真开服务器也能模拟发 HTTP 请求）等。
+		     Spring Boot 4 把测试依赖按模块拆开了，所以每个功能各有一个 -test -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-data-jpa-test</artifactId>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-validation-test</artifactId>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-webmvc-test</artifactId>
+			<scope>test</scope>
+		</dependency>
+	</dependencies>
+
+	<!-- ===============================================================
+	     <build>：怎么编译、打包
+	     =============================================================== -->
+	<build>
+		<plugins>
+			<!-- Spring Boot 的 Maven 插件，做两件事：
+			     1. ./mvnw spring-boot:run → 直接启动程序（开发时用）
+			     2. ./mvnw package → 打成一个「胖 jar」（fat jar）：
+			        把我们的代码 + 所有依赖的库 + Tomcat 全部装进一个 .jar 文件，
+			        服务器上只要装了 Java，java -jar xxx.jar 就能运行，不用再装别的东西 -->
+			<plugin>
+				<groupId>org.springframework.boot</groupId>
+				<artifactId>spring-boot-maven-plugin</artifactId>
+			</plugin>
+		</plugins>
+	</build>
+
+</project>
