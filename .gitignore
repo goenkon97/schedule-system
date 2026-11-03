@@ -1,24 +1,18 @@
-# Logs
-logs
-*.log
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-pnpm-debug.log*
-lerna-debug.log*
+# =====================================================
+# 整个仓库共用的忽略规则
+# 前端自己的规则在 frontend/.gitignore，后端的在 backend/.gitignore
+# =====================================================
 
-node_modules
-dist
-dist-ssr
-*.local
-
-# Editor directories and files
-.vscode/*
-!.vscode/extensions.json
-.idea
+# Mac 自动生成的文件夹信息
 .DS_Store
-*.suo
-*.ntvs*
-*.njsproj
-*.sln
-*.sw?
+
+# 编辑器的个人设置（IntelliJ / VS Code）
+.idea/
+.vscode/
+
+# 本地环境变量（可能有密码，绝对不能提交）
+.env
+.env.*
+
+# Vite 的缓存（在根目录运行过 vite 时会生成）
+.vite/
