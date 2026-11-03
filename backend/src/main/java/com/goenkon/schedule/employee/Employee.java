@@ -84,12 +84,15 @@ public class Employee {
 	// @Enumerated(EnumType.STRING)：枚举存成它的名字（"Kitchen"），而不是序号（0）。
 	//   一定要用 STRING：如果存序号，以后在枚举中间插一个新值，所有旧数据的意思就全乱了；
 	//   而且打开数据库直接看到 "Kitchen"，比看到 0 好懂得多。
-	// length = 20：列的类型是 VARCHAR(20)
+	// 在 MySQL 上，Hibernate 会把这一列建成 MySQL 自己的 enum 类型：enum('Hall','Kitchen')，
+	//   也就是数据库层面也只允许存这两个值，存别的 MySQL 会直接拒绝（启动日志里能看到这句 SQL）。
+	//   所以下面的 length = 20 在 MySQL 上其实用不到；换成别的数据库（比如 PostgreSQL）时会建成 VARCHAR(20)。
+	// 以后给枚举加新的值（比如加一个部门），ddl-auto=update 会自动执行 ALTER TABLE 把新值加进 enum 里。
 	@Enumerated(EnumType.STRING)
 	@Column(nullable = false, length = 20)
 	private Department department;
 
-	// 职位（Chef、Server……），同样存名字
+	// 职位（Chef、Server……），同样存名字，MySQL 里同样是 enum 类型
 	@Enumerated(EnumType.STRING)
 	@Column(nullable = false, length = 20)
 	private Position position;
@@ -111,7 +114,7 @@ public class Employee {
 	// 原因：以前的班表里还记着这个员工的 id，真删掉的话，旧班表就找不到这个人是谁了。
 	// 查员工列表时，只查 deleted = false 的（见 EmployeeRepository）。
 	// boolean（小写，基本类型）：只有 true / false，不会是 null；默认值 false。
-	// 对应的列：deleted BIT(1) NOT NULL（MySQL 里用 1 / 0 表示）
+	// 对应的列：deleted bit NOT NULL（MySQL 里用 1 / 0 表示 true / false）
 	@Column(nullable = false)
 	private boolean deleted = false;
 
