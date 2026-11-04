@@ -9,8 +9,8 @@
 // 4. 删除：先弹确认框，确认后再删
 // 5. 导出 CSV（导出当前搜索结果）
 //
-// 增删改查都走 employeeApi（data/employees.ts），现在存在浏览器里，
-// 刷新页面数据还在；以后接后端只改 employeeApi 里面，这个页面不用动。
+// 增删改查都走 employeeApi（data/employees.ts），已经接上 Java 后端，数据存在 MySQL 里。
+// 后端拒绝时（手机号重复、厨房员工不是正社员……），页面底部用红色提示条显示后端给的原因。
 //
 // 权限：
 // - 店长：两个标签页「员工列表」（增删改查）和「员工申请」（看员工发来的请假 / 换班等申请）
@@ -115,19 +115,28 @@ function EmployeeManager() {
   // 员工列表放进 state：增删改之后页面会重新渲染
   const [list, setList] = useState<EmployeeData[]>([]);
 
-  // 第一次打开页面时“调接口”拿员工列表（以后就是 GET /api/employees）
-  // list() 返回 Promise（以后要等网络）；.then(setList)：拿到结果后放进 state，页面就显示出来
-  useEffect(() => {
-    employeeApi.list().then(setList);
-  }, []);
 
   // 弹窗状态：
   // formTarget = null 不显示；"new" 添加；某个员工对象 = 编辑这个人
   const [formTarget, setFormTarget] = useState<EmployeeData | "new" | null>(null);
   // 准备删除的人（显示确认框）
   const [deleting, setDeleting] = useState<EmployeeData | null>(null);
-  // 底部提示条的文字
+  // 底部提示条的文字（绿色：操作成功）
   const [toast, setToast] = useState("");
+  // 底部错误提示条的文字（红色：后端拒绝了、或者连不上后端）
+  const [errorText, setErrorText] = useState("");
+  // 把 catch 到的错误变成提示文字。
+  // err 是 unknown 类型（JS 里 throw 什么都可以），先判断是不是 Error 才能读 .message；
+  // 我们自己的 ApiError 继承了 Error，message 就是后端返回的 {"message": "..."}
+  const showError = (err: unknown) => setErrorText(err instanceof Error ? err.message : String(err));
+
+  // 第一次打开页面时调接口拿员工列表：GET /api/employees
+  // list() 返回 Promise（要等网络）；.then(setList)：拿到结果后放进 state，页面就显示出来
+  // .catch：请求失败时（后端突然停了等），显示红色提示条，列表保持空
+  // （放在 showError 定义的下面：JS 里 const 要先定义才能用）
+  useEffect(() => {
+    employeeApi.list().then(setList).catch(showError);
+  }, []);
   // 刚添加 / 修改的那一行，短暂高亮一下，方便看到改了哪里
   const [highlightId, setHighlightId] = useState<number | null>(null);
 
@@ -186,25 +195,34 @@ function EmployeeManager() {
   // ---------------------------------------------------
   // 添加 / 编辑：弹窗里点「添加」或「保存」后调用
   // ---------------------------------------------------
+  //
+  // try / catch：await 的接口如果失败（apiFetch 抛出 ApiError），
+  // 会直接跳到 catch，try 里后面的代码（更新列表、关弹窗）都不会执行 ——
+  // 所以失败时弹窗不关，用户填的内容还在，看完红色提示改一下就能再提交。
+  // ---------------------------------------------------
   const handleSubmit = async (input: EmployeeInput) => {
-    if (formTarget === "new") {
-      // 添加：接口返回带新 id 的员工，加到列表最后
-      const created = await employeeApi.create(input);
-      const next = [...list, created];
-      setList(next);
-      // 清空搜索，跳到最后一页，让新加的人马上能看到
-      setKeyword("");
-      setPage(Math.ceil(next.length / PAGE_SIZE));
-      flash(created.id);
-      setToast(t.employee.addedToast(created.name));
-    } else if (formTarget) {
-      // 编辑：用接口返回的数据替换这一行
-      const updated = await employeeApi.update(formTarget.id, input);
-      setList((prev) => prev.map((e) => (e.id === updated.id ? updated : e)));
-      flash(updated.id);
-      setToast(t.employee.updatedToast(updated.name));
+    try {
+      if (formTarget === "new") {
+        // 添加：接口返回带新 id 的员工，加到列表最后
+        const created = await employeeApi.create(input);
+        const next = [...list, created];
+        setList(next);
+        // 清空搜索，跳到最后一页，让新加的人马上能看到
+        setKeyword("");
+        setPage(Math.ceil(next.length / PAGE_SIZE));
+        flash(created.id);
+        setToast(t.employee.addedToast(created.name));
+      } else if (formTarget) {
+        // 编辑：用接口返回的数据替换这一行
+        const updated = await employeeApi.update(formTarget.id, input);
+        setList((prev) => prev.map((e) => (e.id === updated.id ? updated : e)));
+        flash(updated.id);
+        setToast(t.employee.updatedToast(updated.name));
+      }
+      setFormTarget(null);
+    } catch (err) {
+      showError(err);
     }
-    setFormTarget(null);
   };
 
   // ---------------------------------------------------
@@ -212,9 +230,16 @@ function EmployeeManager() {
   // ---------------------------------------------------
   const handleDelete = async () => {
     if (!deleting) return;
-    await employeeApi.remove(deleting.id);
-    setList((prev) => prev.filter((e) => e.id !== deleting.id));
-    setToast(t.employee.deletedToast(deleting.name));
+    try {
+      await employeeApi.remove(deleting.id);
+      // 走到这里说明后端已经删掉了（返回 204），再从页面的列表里去掉
+      setList((prev) => prev.filter((e) => e.id !== deleting.id));
+      setToast(t.employee.deletedToast(deleting.name));
+    } catch (err) {
+      // 删除失败（比如 404：这个人已经被别人删掉了），列表不动，显示原因
+      showError(err);
+    }
+    // 不管成功失败都关掉确认框
     setDeleting(null);
   };
 
@@ -484,6 +509,18 @@ function EmployeeManager() {
         anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
       >
         <Alert severity="success" variant="filled" onClose={() => setToast("")}>{toast}</Alert>
+      </Snackbar>
+
+      {/* ========== 底部错误提示条（红色）==========
+          显示后端返回的错误原因，比如「这个电话号码已经有其他员工在用了。」
+          错误要多留一会儿让人看清，所以是 6 秒 */}
+      <Snackbar
+        open={!!errorText}
+        autoHideDuration={6000}
+        onClose={() => setErrorText("")}
+        anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
+      >
+        <Alert severity="error" variant="filled" onClose={() => setErrorText("")}>{errorText}</Alert>
       </Snackbar>
 
     </div>

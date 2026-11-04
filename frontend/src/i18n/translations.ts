@@ -71,6 +71,13 @@ const en = {
   },
 
   // 班次名称
+  // 连接后端时的提示（App.tsx 启动时拿员工数据）
+  server: {
+    loading: "Connecting to the server…",
+    errorTitle: "Can't load data from the server",
+    errorHint: "Start the backend (Spring Boot, port 8080) and the database (Docker MySQL), then retry.",
+    retry: "Retry",
+  },
   shifts: {
     day: "Day",
     evening: "Evening",
@@ -427,6 +434,12 @@ const zh: Dictionary = {
     settings: "设置",
   },
 
+  server: {
+    loading: "正在连接后端…",
+    errorTitle: "没能从服务器拿到数据",
+    errorHint: "请先启动后端（Spring Boot，8080 端口）和数据库（Docker 里的 MySQL），再点重试。",
+    retry: "重试",
+  },
   shifts: {
     day: "白班",
     evening: "晚班",
@@ -755,6 +768,12 @@ const ja: Dictionary = {
     settings: "設定",
   },
 
+  server: {
+    loading: "サーバーに接続しています…",
+    errorTitle: "サーバーからデータを取得できません",
+    errorHint: "バックエンド（Spring Boot、8080 番ポート）とデータベース（Docker の MySQL）を起動してから、再試行してください。",
+    retry: "再試行",
+  },
   shifts: {
     day: "昼シフト",
     evening: "夜シフト",

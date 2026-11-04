@@ -41,6 +41,9 @@ import { Routes, Route, Link, Navigate, useLocation, useNavigate } from 'react-r
 // 员工申请：侧边栏「员工」后面显示店长还没处理的申请数量
 import { pendingRequestCount, subscribeRequests } from './data/requests';
 
+// loadEmployees：从后端拿全部员工，放进全系统共用的 employees 数组（data/employees.ts）
+import { loadEmployees } from './data/employees';
+
 // 登录状态
 import { useAuth } from './auth/AuthContext';
 
@@ -97,6 +100,44 @@ function App() {
   // 组件消失时 React 会自动调用，避免内存里留着没用的监听
   // 第二个参数 []：只在第一次显示时订阅一次
   useEffect(() => subscribeRequests(() => setPendingCount(pendingRequestCount())), []);
+
+  // =========================
+  // 启动时先从后端拿员工列表
+  //
+  // 排班页、首页等很多地方都「同步地」读员工数组（不等网络），
+  // 所以必须先拿到数据，再显示这些页面。三种状态：
+  //   'loading' → 正在请求，显示「正在连接后端…」
+  //   'ready'   → 拿到了，正常显示页面
+  //   'error'   → 失败了（后端没开、数据库没开……），显示原因和「重试」按钮
+  // =========================
+  const [employeesState, setEmployeesState] = useState<'loading' | 'ready' | 'error'>('loading');
+  // 失败时显示的具体原因（来自 apiFetch 抛出的 ApiError.message）
+  const [employeesError, setEmployeesError] = useState('');
+
+  // 发请求的函数：只负责「请求 → 根据结果改状态」
+  const requestEmployees = () => {
+    loadEmployees()
+      // 成功：数据已经在 employees 数组里了，只要把状态改成 ready，页面就会重新渲染
+      .then(() => setEmployeesState('ready'))
+      // 失败：记下原因，显示错误画面
+      // err 的类型是 unknown（JS 里什么都能被 throw），先判断是不是 Error 再读 message
+      .catch((err: unknown) => {
+        setEmployeesError(err instanceof Error ? err.message : String(err));
+        setEmployeesState('error');
+      });
+  };
+
+  // 点「重试」：先切回「加载中」，再请求一次
+  const retryEmployees = () => {
+    setEmployeesState('loading');
+    requestEmployees();
+  };
+
+  // 第一次显示 App 时请求一次（[] = 只执行一次）。
+  // 这里不用先设 'loading'，因为 useState 的初始值就是 'loading'
+  // （React 不建议在 effect 里同步地 setState，会多渲染一轮；.then / .catch 里的 setState 是等网络回来以后才执行，没问题）
+  // 开发模式的 StrictMode 会故意执行两次，所以浏览器 Network 里看到两个请求是正常的
+  useEffect(requestEmployees, []);
 
   // =========================
   // 侧边栏菜单
@@ -227,6 +268,31 @@ function App() {
       <Routes>
         <Route path="/login" element={<Login />} />
       </Routes>
+    );
+  }
+
+  // =========================
+  // 员工数据还没拿到：先不显示页面，只显示「加载中」或「出错了」
+  // （登录页不需要员工数据，所以这个判断放在登录页后面）
+  // =========================
+  if (employeesState !== 'ready') {
+    return (
+      // 全屏居中的一个小卡片（样式在 index.css 的 .serverGate）
+      <div className="serverGate">
+        {employeesState === 'loading' ? (
+          <p>{t.server.loading}</p>
+        ) : (
+          <div className="confirmBox">
+            <h3>{t.server.errorTitle}</h3>
+            {/* 具体原因（比如「连不上后端服务器……」） */}
+            <p>{employeesError}</p>
+            <p>{t.server.errorHint}</p>
+            <div className="confirmActions">
+              <button className="confirmPrimary" onClick={retryEmployees}>{t.server.retry}</button>
+            </div>
+          </div>
+        )}
+      </div>
     );
   }
 

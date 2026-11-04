@@ -302,3 +302,22 @@ h5 {
 .confirmPrimary:hover {
   background: #1d4ed8;
 }
+
+/* =========================================================
+   启动时连接后端的画面（App.tsx：员工数据还没拿到 / 拿失败时）
+   整个屏幕居中显示一句话或一个错误卡片
+   ========================================================= */
+.serverGate {
+  min-height: 100vh;              /* 占满一整屏的高度 */
+  display: flex;                  /* 用 flex 让里面的东西水平、垂直都居中 */
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  color: var(--text2);            /* 次要文字的灰色 */
+}
+.serverGate .confirmBox {
+  max-width: 420px;               /* 错误卡片别太宽，文字好读 */
+  background: #fff;               /* confirmBox 平时放在弹窗里（弹窗自带白底），这里单独放，要自己加白底 */
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
+}
