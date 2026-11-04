@@ -65,4 +65,16 @@ public class ApiException extends RuntimeException {
 	public static ApiException badRequest(String message) {
 		return new ApiException(HttpStatus.BAD_REQUEST, message);
 	}
+
+	// 401 Unauthorized：「你是谁？」—— 认证失败：邮箱或密码不对、没带通行证（token）、通行证过期或被改过
+	//   名字叫 Unauthorized（未授权）是 HTTP 历史上起错的名字，意思其实是「未认证」（还不知道你是谁）
+	public static ApiException unauthorized(String message) {
+		return new ApiException(HttpStatus.UNAUTHORIZED, message);
+	}
+
+	// 403 Forbidden：「我知道你是谁，但你没有这个权限」—— 授权失败：比如员工去调「添加员工」这种店长才能用的接口
+	//   和 401 的区别：401 是没证明身份，403 是身份没问题、只是不允许
+	public static ApiException forbidden(String message) {
+		return new ApiException(HttpStatus.FORBIDDEN, message);
+	}
 }
