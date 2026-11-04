@@ -27,12 +27,19 @@ import java.util.List;
 // CommandLineRunner：Spring Boot 提供的接口。实现了它的类，会在程序启动完成之后自动执行一次 run 方法。
 //   用来做「启动后马上要做的事」，比如放初始数据。
 import org.springframework.boot.CommandLineRunner;
+// Order：多个 CommandLineRunner 时，规定「谁先执行」（数字小的先执行）
+import org.springframework.core.annotation.Order;
 // Component：最普通的「交给 Spring 管理」的注解（@Service、@RestController 本质上都是它的特殊版本）
 import org.springframework.stereotype.Component;
 
 // @Component：让 Spring 扫描到它、new 一个对象放进容器。
 //   Spring 发现它实现了 CommandLineRunner，启动完成后就会调用它的 run 方法。
 @Component
+// @Order(1)：第一个执行。
+//   因为 AccountSeeder（@Order(2)）要给员工开账号，必须等员工先存进数据库。
+//   不写 @Order 的话，两个 Seeder 谁先执行是不确定的：
+//   如果账号先执行，那时员工表还是空的，就一个账号都开不出来。
+@Order(1)
 // implements CommandLineRunner：实现这个接口 = 承诺「我有一个 run 方法」
 public class EmployeeSeeder implements CommandLineRunner {
 
