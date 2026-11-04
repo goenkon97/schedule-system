@@ -49,26 +49,37 @@
 
 ---
 
-## 2. 数据库表（4 张）
+## 2. 数据库表（5 张）
 
-### employees（员工 + 登录账号）
+### employees（员工）
 
-员工和账号放在同一张表：一个员工就是一个账号。
+店里有这个人：排班要用的信息。
 
 | 字段 | 类型 | 说明 |
 | --- | --- | --- |
 | id | BIGINT 主键，自增 | 员工编号 |
 | name | VARCHAR(40) | 姓名 |
-| phone | VARCHAR(20)，唯一 | 电话，不能重复 |
-| email | VARCHAR(100)，唯一 | 登录用的邮箱 |
-| password_hash | VARCHAR(100) | 密码**加密后**的结果（绝对不存明文密码） |
-| role | VARCHAR(10) | `manager` / `staff`，决定权限 |
-| department | VARCHAR(10) | `Kitchen` / `Hall` |
-| position | VARCHAR(20) | `Chef` / `Cook` / `Dishwasher` / `Server` / `Host` / `Manager` |
-| employment | VARCHAR(10) | `fullTime` / `partTime` |
-| status | VARCHAR(10) | `active` / `onLeave` |
-| deleted | BOOLEAN | 删除时不真删，只标记（以前的班表还要用到这个人） |
-| created_at / updated_at | DATETIME | 创建、修改时间 |
+| phone | VARCHAR(20) | 电话。在职员工之间不能重复（Service 里检查，不加唯一约束，因为有软删除） |
+| department | enum | `Kitchen` / `Hall` |
+| position | enum | `Chef` / `Cook` / `Dishwasher` / `Server` / `Host` / `Manager` |
+| employment | enum | `fullTime` / `partTime` |
+| status | enum | `active` / `onLeave` |
+| deleted | BIT | 删除时不真删，只标记（以前的班表还要用到这个人） |
+| created_at / updated_at | DATETIME(6) | 创建、修改时间 |
+
+### accounts（登录账号）
+
+这个人能登录系统：和员工分开放，一个员工最多一个账号（一对一）。
+
+| 字段 | 类型 | 说明 |
+| --- | --- | --- |
+| id | BIGINT 主键，自增 | 账号编号（和员工编号是两套） |
+| email | VARCHAR(100)，唯一 | 登录用的邮箱，统一存小写 |
+| password_hash | VARCHAR(100) | 密码经过 BCrypt 算出的哈希（绝对不存密码原文） |
+| role | enum | `manager` / `staff`，决定权限 |
+| password_temporary | BIT | 是不是店长给的临时密码（是 → 登录后提醒修改，不强制） |
+| employee_id | BIGINT，唯一，外键 → employees.id | 属于哪个员工 |
+| created_at / updated_at | DATETIME(6) | 创建、修改时间 |
 
 ### schedules（一个月一份班表）
 
