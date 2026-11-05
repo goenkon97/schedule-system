@@ -6,7 +6,7 @@
 //   1. 按邮箱找账号（找不到 → 失败）
 //   2. 用 BCrypt 比对密码（对不上 → 失败）
 //   3. 这个员工有没有被删除（被删除了 → 失败：人已经离职，账号跟着失效）
-//   4. 都通过 → 返回他的信息（下一步还会发一张 JWT 通行证）
+//   4. 都通过 → 发一张 JWT 通行证（JwtService），连同他的信息一起返回
 // 任何一步失败，都返回同一句「邮箱或密码错误」，原因见下面的注释。
 // =====================================================================
 
@@ -38,17 +38,21 @@ public class AuthService {
 	//   必须是「真的、格式正确」的 BCrypt 哈希：如果格式不对，matches 会立刻返回 false（不做计算），就起不到「花同样时间」的作用了
 	private static final String DUMMY_HASH = "$2a$10$S.pkTHUVBg1jIiyMmLYEhOnG3vxenPIyeRX/EP9ueTJgh7k4q1.mG";
 
-	// 两个依赖，构造方法注入（Spring 按类型找到它们传进来）
+	// 三个依赖，构造方法注入（Spring 按类型找到它们传进来）
 	private final AccountRepository accountRepository;
 	private final PasswordEncoder passwordEncoder;
+	// 新加的：发通行证的工具（JwtService 上有 @Service，Spring 启动时已经 new 好放在容器里了）
+	private final JwtService jwtService;
 
-	public AuthService(AccountRepository accountRepository, PasswordEncoder passwordEncoder) {
+	public AuthService(AccountRepository accountRepository, PasswordEncoder passwordEncoder, JwtService jwtService) {
 		this.accountRepository = accountRepository;
 		this.passwordEncoder = passwordEncoder;
+		this.jwtService = jwtService;
 	}
 
-	// 登录：成功返回用户信息，失败抛 401
-	public MeResponse login(LoginRequest request) {
+	// 登录：成功返回「通行证 + 用户信息」，失败抛 401
+	//   返回类型从 MeResponse 改成了 LoginResponse：因为现在要交出去两样东西（token 和 user）
+	public LoginResponse login(LoginRequest request) {
 		// 邮箱统一转成小写、去掉前后空格再查 —— 和 Account 构造方法里存进去的规则一样，
 		// 这样用户输入 Manager@Demo.com 也能登录
 		String email = request.email().trim().toLowerCase();
@@ -80,7 +84,11 @@ public class AuthService {
 			throw ApiException.unauthorized(LOGIN_FAILED);
 		}
 
-		// ④ 全部通过：在事务里把需要的信息取出来，装进 DTO 返回（出了这个方法，懒加载就用不了了）
-		return MeResponse.from(account);
+		// ④ 全部通过：
+		//   发通行证：createToken 里会读 account.getEmployee().getId()（懒加载），所以必须在事务里调用 —— 这里正是
+		String token = jwtService.createToken(account);
+		//   把「通行证」和「这个人是谁」一起装进 LoginResponse 交出去
+		//   （MeResponse.from 同样会碰懒加载的员工信息，也要在事务里，出了这个方法就用不了了）
+		return new LoginResponse(token, MeResponse.from(account));
 	}
 }

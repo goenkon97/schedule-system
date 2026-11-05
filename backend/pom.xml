@@ -146,6 +146,18 @@
 			<artifactId>spring-security-crypto</artifactId>
 		</dependency>
 
+		<!-- Nimbus JOSE + JWT：生成和检查 JWT「通行证」的库
+		     JWT = 一段写着「你是谁、什么时候过期」的文字，后面盖了一个只有后端才能盖的章（签名）。
+		     这个库帮我们做两件事：
+		       1. 登录成功时：把信息写好、盖章，变成一长串字符（token）交给前端
+		       2. 之后每个请求：检查前端带来的 token，章是不是真的、有没有过期
+		     为什么选它：Spring Security 自己处理 JWT 时用的就是这个库，很成熟；
+		     而且 Spring Boot 已经管好了它的版本，这里不用写版本号。 -->
+		<dependency>
+			<groupId>com.nimbusds</groupId>
+			<artifactId>nimbus-jose-jwt</artifactId>
+		</dependency>
+
 		<!-- MySQL 驱动：Java 和 MySQL 之间的「翻译官」。
 		     Java 只认识一套标准的数据库接口（JDBC），每种数据库各自提供一个「驱动」来实现这套接口。
 		     scope 是 runtime：我们的代码里不会直接写 MySQL 驱动的类，只有程序跑起来、真正连数据库时才用到 -->

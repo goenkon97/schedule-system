@@ -30,7 +30,7 @@ public class AuthController {
 	}
 
 	// POST /api/auth/login
-	//   成功 → 200 + {"user": {"id": 8, "name": "Sophia Liu", "email": "manager@demo.com", "role": "manager", "passwordTemporary": false}}
+	//   成功 → 200 + {"token": "eyJ...", "user": {"id": 8, "name": "Sophia Liu", "email": "manager@demo.com", "role": "manager", "passwordTemporary": false}}
 	//   邮箱或密码错 → 401 + {"message": "邮箱或密码错误。"}
 	//   格式不对（没填、不像邮箱）→ 400
 	// 为什么登录用 POST 而不是 GET？
@@ -38,6 +38,7 @@ public class AuthController {
 	//   POST 的数据在请求体里，不会出现在网址上。密码绝对不能放进网址。
 	@PostMapping("/login")
 	public LoginResponse login(@Valid @RequestBody LoginRequest request) {
-		return new LoginResponse(authService.login(request));
+		// Service 已经把「通行证 + 用户信息」装好了，这里直接交出去
+		return authService.login(request);
 	}
 }
