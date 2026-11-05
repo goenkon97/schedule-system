@@ -151,11 +151,13 @@
 		     这个库帮我们做两件事：
 		       1. 登录成功时：把信息写好、盖章，变成一长串字符（token）交给前端
 		       2. 之后每个请求：检查前端带来的 token，章是不是真的、有没有过期
-		     为什么选它：Spring Security 自己处理 JWT 时用的就是这个库，很成熟；
-		     而且 Spring Boot 已经管好了它的版本，这里不用写版本号。 -->
+		     为什么选它：Spring Security 自己处理 JWT 时用的就是这个库，很成熟。
+		     版本号要自己写：Spring Boot 4 没有替我们管这个库的版本（一开始没写，Maven 报「缺版本号」，整个项目都加载不了）。
+		     9.37.3 是一个稳定的老版本，支持 Java 8 以上，我们的 Java 21 没问题。 -->
 		<dependency>
 			<groupId>com.nimbusds</groupId>
 			<artifactId>nimbus-jose-jwt</artifactId>
+			<version>9.37.3</version>
 		</dependency>
 
 		<!-- MySQL 驱动：Java 和 MySQL 之间的「翻译官」。
