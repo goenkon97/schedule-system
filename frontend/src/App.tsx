@@ -28,7 +28,7 @@ import Login from './pages/Login/Login';
 
 // useState：组件自己的「记忆」（值变了页面会重新渲染）
 // useEffect：组件显示出来之后要做的事（这里用来订阅申请数量的变化）
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
 // React Router：
 // Routes / Route  → 网址和页面的对应表
@@ -115,7 +115,9 @@ function App() {
   const [employeesError, setEmployeesError] = useState('');
 
   // 发请求的函数：只负责「请求 → 根据结果改状态」
-  const requestEmployees = () => {
+  // useCallback(函数, [])：让这个函数在每次渲染时都是「同一个」，下面的 useEffect 才能放心把它写进依赖里
+  // （里面只用到 setState，setState 本身永远不变，所以依赖是空数组）
+  const requestEmployees = useCallback(() => {
     loadEmployees()
       // 成功：数据已经在 employees 数组里了，只要把状态改成 ready，页面就会重新渲染
       .then(() => setEmployeesState('ready'))
@@ -125,7 +127,7 @@ function App() {
         setEmployeesError(err instanceof Error ? err.message : String(err));
         setEmployeesState('error');
       });
-  };
+  }, []);
 
   // 点「重试」：先切回「加载中」，再请求一次
   const retryEmployees = () => {
@@ -133,11 +135,16 @@ function App() {
     requestEmployees();
   };
 
-  // 第一次显示 App 时请求一次（[] = 只执行一次）。
+  // 登录以后才去拿员工列表（后端现在要求带通行证，没登录去拿只会得到 401）。
+  // userId：当前登录的人的员工 id；没登录是 undefined。
+  // [userId, requestEmployees]：登录了、或者换了一个人登录，就重新拿一次
   // 这里不用先设 'loading'，因为 useState 的初始值就是 'loading'
   // （React 不建议在 effect 里同步地 setState，会多渲染一轮；.then / .catch 里的 setState 是等网络回来以后才执行，没问题）
   // 开发模式的 StrictMode 会故意执行两次，所以浏览器 Network 里看到两个请求是正常的
-  useEffect(requestEmployees, []);
+  const userId = user?.id;
+  useEffect(() => {
+    if (userId !== undefined) requestEmployees();
+  }, [userId, requestEmployees]);
 
   // =========================
   // 侧边栏菜单
@@ -269,6 +276,14 @@ function App() {
         <Route path="/login" element={<Login />} />
       </Routes>
     );
+  }
+
+  // =========================
+  // 没登录：直接送去登录页（后端的每个接口现在都要通行证，没登录什么都看不了）
+  // replace：替换掉当前这条浏览记录，按浏览器「后退」不会又回到这个没登录的页面
+  // =========================
+  if (!user) {
+    return <Navigate to="/login" replace />;
   }
 
   // =========================

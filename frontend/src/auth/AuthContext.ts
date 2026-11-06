@@ -6,16 +6,20 @@
 
 import { createContext, useContext } from "react";
 
-// 登录后的用户信息（以后由后端登录接口返回）
+// 登录后的用户信息 —— 和后端 MeResponse.java 的字段一一对应
+//   id 是「员工 id」（班表、申请、我的信息都按员工 id 找人）
 export interface AuthUser {
   id: number;
   name: string;
   email: string;
   role: "manager" | "staff";       // 店长 / 员工：决定登录后能做什么
+  passwordTemporary: boolean;      // 是不是店长给的临时密码（以后用来提醒「请修改密码」）
 }
 
 // 登录的结果：成功，或者失败的原因（原因用 key，页面再翻译成当前语言）
-export type LoginResult = { ok: true } | { ok: false; error: "invalid" };
+//   invalid → 邮箱或密码错（后端 401 / 400）
+//   network → 连不上后端，或者后端出错了
+export type LoginResult = { ok: true } | { ok: false; error: "invalid" | "network" };
 
 // 「公共盒子」里装的东西：当前用户 + 登录 / 退出两个函数
 // login 返回 Promise：因为以后要等后端回复，是「异步」的，调用时要写 await

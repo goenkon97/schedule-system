@@ -38,7 +38,7 @@ import CalendarMonthIcon from "@mui/icons-material/CalendarMonth";
 
 import { useLanguage } from "../../i18n/LanguageContext";
 import { useAuth } from "../../auth/AuthContext";
-import { DEMO_ACCOUNTS } from "../../auth/AuthProvider";
+import { DEMO_ACCOUNTS } from "../../auth/demoAccounts";
 import LanguageSwitcher from "../../components/LanguageSwitcher/LanguageSwitcher";
 import "./Login.css";
 
@@ -59,7 +59,7 @@ const fieldSx = {
 
 export default function Login() {
   const { t } = useLanguage();
-  const { login } = useAuth();   // 登录函数来自 AuthProvider（现在是假登录，以后调后端）
+  const { login } = useAuth();   // 登录函数来自 AuthProvider（调后端的 POST /api/auth/login）
   const navigate = useNavigate();
 
   // 表单的值
@@ -94,12 +94,13 @@ export default function Login() {
     if (!validate() || loading) return;   // 没通过校验，或者正在登录中（防止连点），就不继续
 
     setLoading(true);
-    // await：等 login 做完（现在是假装等 0.7 秒，以后是等后端回复）再往下走
+    // await：等 login 做完（等后端回复）再往下走
     const res = await login(email, password, remember);
     setLoading(false);
 
     if (res.ok) navigate("/");         // 登录成功回首页
-    else setFormError(t.auth.invalidCredentials);
+    // 失败：密码错 → 「邮箱或密码错误」；连不上后端 → 「连不上服务器」
+    else setFormError(res.error === "network" ? t.auth.networkError : t.auth.invalidCredentials);
   };
 
   // 点演示账号：自动填好
