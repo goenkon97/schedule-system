@@ -142,3 +142,8 @@
 .reqPanel .reqAction.primary { border: none; background: var(--primary); color: #fff; }
 .reqPanel .reqAction.primary:hover { background: #1d4ed8; }
 .reqPanel .reqAction:not(.primary):hover { background: #f8fafc; }
+
+/* 「发送给店长」没填完时：变灰、鼠标变成禁止的样子、点不了 */
+.MyProfile .mpSubmit:disabled { opacity: 0.45; cursor: not-allowed; box-shadow: none; }
+/* 灰着的时候，鼠标放上去也不变色（不然看起来像能点） */
+.MyProfile .mpSubmit:disabled:hover { background: var(--primary); }

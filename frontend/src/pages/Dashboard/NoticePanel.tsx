@@ -57,7 +57,9 @@ export default function NoticePanel() {
     const [y, m, d] = s.split("-").map(Number);
     return new Date(y, m - 1, d).toLocaleDateString(locale, { month: "short", day: "numeric" });
   };
-  const fmtRange = (r: StaffRequest) => (r.startDate === r.endDate ? fmtDate(r.startDate) : `${fmtDate(r.startDate)} – ${fmtDate(r.endDate)}`);
+  // 「其他」类型没有日期：显示「—」
+  const fmtRange = (r: StaffRequest) =>
+    !r.startDate || !r.endDate ? "—" : r.startDate === r.endDate ? fmtDate(r.startDate) : `${fmtDate(r.startDate)} – ${fmtDate(r.endDate)}`;
 
   // 点通知 / 底部链接要去的地方
   const target = isManager ? "/employee?tab=requests" : "/employee";

@@ -375,6 +375,10 @@ const en = {
     fieldDate: "Date",
     fieldFrom: "From",
     fieldTo: "To",
+    fieldLeaveSpan: "How long",
+    leaveSingle: "One day",
+    leaveMulti: "Several days",
+    fieldSwapDate: "Shift you want to swap",
     fieldNote: "Note",
     notePlaceholder: {
       leave: "Reason for the leave",
@@ -717,6 +721,10 @@ const zh: Dictionary = {
     fieldDate: "日期",
     fieldFrom: "开始",
     fieldTo: "结束",
+    fieldLeaveSpan: "请几天",
+    leaveSingle: "一天",
+    leaveMulti: "多天",
+    fieldSwapDate: "想换的那天",
     fieldNote: "备注",
     notePlaceholder: {
       leave: "请假的原因",
@@ -1053,6 +1061,10 @@ const ja: Dictionary = {
     fieldDate: "日付",
     fieldFrom: "開始",
     fieldTo: "終了",
+    fieldLeaveSpan: "日数",
+    leaveSingle: "1日",
+    leaveMulti: "複数日",
+    fieldSwapDate: "交代したい日",
     fieldNote: "備考",
     notePlaceholder: {
       leave: "休暇の理由",

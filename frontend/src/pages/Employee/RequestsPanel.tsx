@@ -105,7 +105,8 @@ export default function RequestsPanel({ onToast }: { onToast: (msg: string) => v
                     </TableCell>
                     <TableCell><span className={`reqType ${r.type}`}>{t.requests.types[r.type]}</span></TableCell>
                     <TableCell sx={{ whiteSpace: "nowrap" }}>
-                      {r.startDate === r.endDate ? fmtDate(r.startDate) : `${fmtDate(r.startDate)} – ${fmtDate(r.endDate)}`}
+                      {/* 「其他」类型没有日期：显示「—」；只有一天：显示一个日期；一段：开始 – 结束 */}
+                      {!r.startDate || !r.endDate ? "—" : r.startDate === r.endDate ? fmtDate(r.startDate) : `${fmtDate(r.startDate)} – ${fmtDate(r.endDate)}`}
                     </TableCell>
                     <TableCell sx={{ color: "#6b7280 !important" }}><div className="reqNote">{r.note}</div></TableCell>
                     <TableCell sx={{ color: "#6b7280 !important", whiteSpace: "nowrap" }}>{fmtTime(r.createdAt)}</TableCell>

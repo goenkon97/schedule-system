@@ -26,8 +26,9 @@ export interface StaffRequest {
   id: number;
   employeeId: number;        // 谁提交的（对应员工 id）
   type: RequestType;
-  startDate: string;         // "2026-12-05"
-  endDate: string;           // 只有一天时和 startDate 一样
+  // 日期：请假 = 一天或一段；换班 = 想换的那一天（开始 = 结束）；其他 = 没有日期（null）
+  startDate: string | null;  // "2026-12-05"
+  endDate: string | null;    // 只有一天时和 startDate 一样
   note: string;              // 备注：原因、想和谁换等，员工自由写
   status: RequestStatus;
   createdAt: string;         // 提交时间（ISO 字符串）

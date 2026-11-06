@@ -4,7 +4,11 @@
 //
 // 三块内容：
 // 1. 基本信息：只能看，不能改（改信息要找店长）
-// 2. 提交申请：类型（请假 / 换班 / 其他）+ 日期 + 备注
+// 2. 提交申请：类型 + 日期 + 备注，日期按类型变：
+//      请假 → 先选「一天 / 多天」：一天只填一个日期，多天填开始和结束
+//      换班 → 只填「想换的那一天」，和谁换写在备注里
+//      其他 → 不用填日期
+//    必填的没填完，「发送给店长」按钮是灰的，点不了
 // 3. 我的申请：自己提交过的申请和处理状态；店长还没处理的可以撤回
 //
 // 申请只是“通知店长”：店长当面沟通后，自己去排班页调班，
@@ -41,6 +45,8 @@ export default function MyProfile({ user }: { user: AuthUser }) {
 
   // ---------- 表单 ----------
   const [type, setType] = useState<RequestType>("leave");
+  // 请假是一天还是多天（只有请假用得到）
+  const [leaveSpan, setLeaveSpan] = useState<"single" | "multi">("single");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [note, setNote] = useState("");
@@ -56,21 +62,55 @@ export default function MyProfile({ user }: { user: AuthUser }) {
 
   const [toast, setToast] = useState("");
 
-  // 换班只选一天；请假、其他可以选一段日期
-  const singleDay = type === "swap";
+  // ---------------------------------------------------
+  // 这个类型要填几个日期：
+  //   none   → 其他：不填
+  //   single → 换班、一天的请假：填一个
+  //   range  → 多天的请假：填开始和结束
+  // ---------------------------------------------------
+  const dateMode: "none" | "single" | "range" =
+    type === "other" ? "none" : type === "leave" && leaveSpan === "multi" ? "range" : "single";
+
+  // 多天请假时，结束日期早于开始日期（"YYYY-MM-DD" 可以直接按字符串比大小）
+  const dateOrderWrong = dateMode === "range" && !!startDate && !!endDate && endDate < startDate;
 
   // ---------------------------------------------------
-  // 点「发送给店长」：检查日期和备注 → 调接口提交 → 清空表单、刷新下面的列表
-  // return setError(...)：显示错误并直接结束函数（后面的代码不执行）
+  // 能不能发送：该填的都填了，按钮才能点
+  //   日期：none 不用；single 要有开始；range 开始、结束都要有，而且顺序对
+  //   备注：都要写（请假写原因，换班写和谁换，其他写想说什么）
+  // ---------------------------------------------------
+  const datesOk =
+    dateMode === "none" ||
+    (dateMode === "single" && !!startDate) ||
+    (dateMode === "range" && !!startDate && !!endDate && !dateOrderWrong);
+  const canSubmit = datesOk && note.trim() !== "";
+
+  // 切换类型、或者切换一天 / 多天时，把日期清空，免得带着上一种的日期提交
+  const changeType = (x: RequestType) => {
+    setType(x);
+    setStartDate("");
+    setEndDate("");
+    setError("");
+  };
+  const changeLeaveSpan = (x: "single" | "multi") => {
+    setLeaveSpan(x);
+    setEndDate("");
+    setError("");
+  };
+
+  // ---------------------------------------------------
+  // 点「发送给店长」：调接口提交 → 清空表单、刷新下面的列表
+  // （按钮在没填完时是灰的，这里再检查一次 canSubmit，防止按回车绕过去）
   // ---------------------------------------------------
   const handleSubmit = async (ev: FormEvent) => {
     ev.preventDefault();
-    const end = singleDay || !endDate ? startDate : endDate;   // 没填结束日期 = 只有一天
-    if (!startDate) return setError(t.requests.errDate);
-    if (end < startDate) return setError(t.requests.errDateOrder);   // "YYYY-MM-DD" 可以直接按字符串比大小
-    if (!note.trim()) return setError(t.requests.errNote);
+    if (!canSubmit) return;
 
-    await requestApi.create({ employeeId: user.id, type, startDate, endDate: end, note: note.trim() });
+    // 按类型算出要存的开始、结束日期：没有日期就是 null；只有一天就开始 = 结束
+    const start = dateMode === "none" ? null : startDate;
+    const end = dateMode === "range" ? endDate : start;
+
+    await requestApi.create({ employeeId: user.id, type, startDate: start, endDate: end, note: note.trim() });
     // 发送成功：清空表单，刷新下面的列表
     setStartDate("");
     setEndDate("");
@@ -92,7 +132,9 @@ export default function MyProfile({ user }: { user: AuthUser }) {
     const [y, m, d] = s.split("-").map(Number);
     return new Date(y, m - 1, d).toLocaleDateString(locale, { month: "short", day: "numeric", weekday: "short" });
   };
-  const fmtRange = (r: StaffRequest) => (r.startDate === r.endDate ? fmtDate(r.startDate) : `${fmtDate(r.startDate)} – ${fmtDate(r.endDate)}`);
+  // 「其他」类型没有日期：显示「—」
+  const fmtRange = (r: StaffRequest) =>
+    !r.startDate || !r.endDate ? "—" : r.startDate === r.endDate ? fmtDate(r.startDate) : `${fmtDate(r.startDate)} – ${fmtDate(r.endDate)}`;
   const fmtTime = (iso: string) => new Date(iso).toLocaleString(locale, { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
 
   return (
@@ -141,26 +183,47 @@ export default function MyProfile({ user }: { user: AuthUser }) {
               <span>{t.requests.fieldType}</span>
               <div className="mpSegment">
                 {TYPES.map((x) => (
-                  <button type="button" key={x} className={type === x ? "active" : ""} onClick={() => { setType(x); setError(""); }}>
+                  <button type="button" key={x} className={type === x ? "active" : ""} onClick={() => changeType(x)}>
                     {t.requests.types[x]}
                   </button>
                 ))}
               </div>
             </div>
 
-            {/* 日期：换班只有一个日期，请假 / 其他有开始和结束 */}
-            <div className={`mpDates ${singleDay ? "single" : ""}`}>
-              <label className="mpField">
-                <span>{singleDay ? t.requests.fieldDate : t.requests.fieldFrom}</span>
-                <input type="date" min={todayStr()} value={startDate} onChange={(e) => { setStartDate(e.target.value); setError(""); }} />
-              </label>
-              {!singleDay && (
+            {/* 请假：先选一天还是多天 */}
+            {type === "leave" && (
+              <div className="mpField">
+                <span>{t.requests.fieldLeaveSpan}</span>
+                <div className="mpSegment">
+                  <button type="button" className={leaveSpan === "single" ? "active" : ""} onClick={() => changeLeaveSpan("single")}>
+                    {t.requests.leaveSingle}
+                  </button>
+                  <button type="button" className={leaveSpan === "multi" ? "active" : ""} onClick={() => changeLeaveSpan("multi")}>
+                    {t.requests.leaveMulti}
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* 日期：「其他」不显示；一天 / 换班显示一个；多天显示开始和结束 */}
+            {dateMode !== "none" && (
+              <div className={`mpDates ${dateMode === "single" ? "single" : ""}`}>
                 <label className="mpField">
-                  <span>{t.requests.fieldTo}</span>
-                  <input type="date" min={startDate || todayStr()} value={endDate} onChange={(e) => { setEndDate(e.target.value); setError(""); }} />
+                  <span>
+                    {type === "swap" ? t.requests.fieldSwapDate : dateMode === "range" ? t.requests.fieldFrom : t.requests.fieldDate}
+                  </span>
+                  <input type="date" min={todayStr()} value={startDate} onChange={(e) => { setStartDate(e.target.value); setError(""); }} />
                 </label>
-              )}
-            </div>
+                {dateMode === "range" && (
+                  <label className="mpField">
+                    <span>{t.requests.fieldTo}</span>
+                    <input type="date" min={startDate || todayStr()} value={endDate} onChange={(e) => { setEndDate(e.target.value); setError(""); }} />
+                  </label>
+                )}
+              </div>
+            )}
+            {/* 多天请假：结束日期早于开始日期时，提示一下 */}
+            {dateOrderWrong && <p className="mpError">{t.requests.errDateOrder}</p>}
 
             <label className="mpField">
               <span>{t.requests.fieldNote}</span>
@@ -175,7 +238,8 @@ export default function MyProfile({ user }: { user: AuthUser }) {
 
             {error && <p className="mpError">{error}</p>}
 
-            <button type="submit" className="mpSubmit"><SendIcon sx={{ fontSize: 17 }} /> {t.requests.submit}</button>
+            {/* disabled：没填完就是灰的、点不了（样式在 Requests.css 的 .mpSubmit:disabled） */}
+            <button type="submit" className="mpSubmit" disabled={!canSubmit}><SendIcon sx={{ fontSize: 17 }} /> {t.requests.submit}</button>
           </form>
         </section>
       </div>
