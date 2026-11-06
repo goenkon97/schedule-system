@@ -84,6 +84,44 @@ function Dashboard() {
     return map;
   }, [todayEntry]);   // 只有今天的班表变了才重新算
 
+  // ---------------------------------------------------
+  // 本月总工时：把这个月班表里每个人每个班的小时数加起来
+  //   白班 10:00 - 15:00 = 5 小时，晚班 17:00 - 23:00 = 6 小时（来自 data/shifts.ts 的 shiftDefinitions）
+  //   正社员：kitchen / hall 里每个 id 算一次；兼职：partTime 里每一条算一次
+  // 同时记下「这个月有班的人」（Set 去重），用来算平均每人多少小时
+  // ---------------------------------------------------
+  const monthStats = useMemo(() => {
+    // "10:00" → 10（只取小时；我们的班次都是整点开始、整点结束）
+    const hourOf = (time: string) => Number(time.split(":")[0]);
+    // 每种班次几小时：{ day: 5, evening: 6 }
+    const shiftHours = Object.fromEntries(
+      shiftDefinitions.map((s) => [s.type, hourOf(s.end) - hourOf(s.start)]),
+    ) as Record<ShiftType, number>;
+
+    let total = 0;
+    const people = new Set<number>();
+    for (const day of monthSchedule?.days ?? []) {
+      for (const shift of ["day", "evening"] as ShiftType[]) {
+        const ids = [...day.kitchen[shift], ...day.hall[shift]];
+        ids.forEach((id) => people.add(id));
+        total += ids.length * shiftHours[shift];
+      }
+      day.partTime.forEach((p) => {
+        people.add(p.employeeId);
+        total += shiftHours[p.shift];
+      });
+    }
+    return {
+      total,
+      // 平均：总工时 ÷ 人数，四舍五入到整数；没人上班时是 0（避免除以 0）
+      average: people.size > 0 ? Math.round(total / people.size) : 0,
+    };
+  }, [monthSchedule]);
+
+  // 两个部门各有多少人（员工总数卡片的说明文字）
+  const kitchenCount = employees.filter((e) => e.department === "Kitchen").length;
+  const hallCount = employees.length - kitchenCount;
+
   // 休假中的员工
   const leaveToday = employees.filter((e) => e.status === "onLeave").length;
 
@@ -105,8 +143,8 @@ function Dashboard() {
       value: totalEmployees,
       icon: GroupsIcon,
       tone: 'blue',
-      trend: { label: '+2', direction: 'up', good: true },
-      description: t.dashboard.vsLastMonth,
+      // 以前这里是写死的「+2 较上月」，现在换成真实的部门人数
+      description: t.dashboard.deptBreakdown(kitchenCount, hallCount),
     },
     {
       id: 2,
@@ -128,14 +166,14 @@ function Dashboard() {
     },
     {
       id: 4,
-      title: t.dashboard.totalOvertime,
-      value: 8,
+      // 以前这里是写死的「加班 8 小时」，现在从本月班表算出来
+      title: t.dashboard.monthHours,
+      value: monthStats.total,
       unit: t.dashboard.hours,
       icon: AccessTimeIcon,
       tone: 'purple',
-      // 加班变多是“坏事”，所以 good: false → 红色
-      trend: { label: '+1.5', direction: 'up', good: false },
-      description: t.dashboard.thisWeek,
+      // 这个月还没生成班表：总工时是 0，说明文字提示一下
+      description: monthSchedule ? t.dashboard.avgPerPerson(monthStats.average) : t.dashboard.noScheduleThisMonth,
     },
   ];
 
