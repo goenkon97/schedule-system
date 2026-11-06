@@ -91,4 +91,23 @@ public class AuthService {
 		//   （MeResponse.from 同样会碰懒加载的员工信息，也要在事务里，出了这个方法就用不了了）
 		return new LoginResponse(token, MeResponse.from(account));
 	}
+
+	// ---------------------------------------------------------------
+	// 我是谁：GET /api/auth/me 调用
+	//   参数 accountId：门卫从通行证里读出来的账号 id
+	//   为什么不直接用通行证里的信息，还要再查一次数据库？
+	//     通行证里只有 id 和角色，没有名字、邮箱；而且名字可能被店长改过。
+	//     查数据库拿到的是「现在」最新的信息。
+	//     另外，如果这个员工在通行证有效期内被删除（离职）了，这里也能发现，直接 401。
+	// ---------------------------------------------------------------
+	public MeResponse me(Long accountId) {
+		// findById：JpaRepository 白送的方法，按主键（账号 id）找一行 → SELECT ... FROM accounts WHERE id = ?
+		Account account = accountRepository.findById(accountId)
+				// filter：盒子里有东西，再加一个条件 —— 员工没被删除才算数（这里会触发懒加载，查 employees 表）
+				.filter(a -> !a.getEmployee().isDeleted())
+				// 盒子是空的（账号没了，或者员工被删除了）→ 401，让前端回到登录页
+				.orElseThrow(() -> ApiException.unauthorized("登录已失效，请重新登录。"));
+		// 还在事务里（类上的 @Transactional），把需要的信息取出来装进 MeResponse
+		return MeResponse.from(account);
+	}
 }

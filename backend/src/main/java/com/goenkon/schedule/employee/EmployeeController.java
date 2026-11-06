@@ -39,6 +39,9 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 // RestController：这个类负责接 HTTP 请求，返回值自动转成 JSON
 import org.springframework.web.bind.annotation.RestController;
 
+// ManagerOnly：我们自己做的标签，贴在方法上 = 只有店长能用（门卫 AuthInterceptor 会检查）
+import com.goenkon.schedule.auth.ManagerOnly;
+
 // Valid：让 Spring 按 EmployeeRequest 字段上的注解（@NotBlank、@Pattern……）检查请求数据
 import jakarta.validation.Valid;
 
@@ -58,6 +61,8 @@ public class EmployeeController {
 	}
 
 	// GET /api/employees → 所有在职员工
+	// 没贴 @ManagerOnly：登录了的人都能看（员工的班表页、首页也要显示同事的名字）。
+	// 没登录（没带通行证）的请求，在门卫那里就被 401 拦下了，进不到这里。
 	// 返回 List<EmployeeResponse>，Jackson 会把它转成 JSON 数组：[{...}, {...}, ...]
 	@GetMapping
 	public List<EmployeeResponse> list() {
@@ -77,7 +82,9 @@ public class EmployeeController {
 	// @RequestBody：把请求体里的 JSON 变成 EmployeeRequest 对象
 	// @Valid：变成对象以后，先按字段上的注解检查一遍；不通过就抛异常 → GlobalExceptionHandler 返回 400，
 	//         根本不会进到这个方法里
+	// @ManagerOnly：只有店长能添加员工。员工带着自己的通行证来调 → 门卫返回 403
 	@PostMapping
+	@ManagerOnly
 	@ResponseStatus(HttpStatus.CREATED)
 	public EmployeeResponse create(@Valid @RequestBody EmployeeRequest request) {
 		return employeeService.create(request);
@@ -85,7 +92,9 @@ public class EmployeeController {
 
 	// PUT /api/employees/3 → 修改 id 为 3 的员工（PUT = 用请求里的数据整个替换）
 	// 同时用到了路径里的 id 和请求体里的数据
+	// @ManagerOnly：只有店长能修改员工
 	@PutMapping("/{id}")
+	@ManagerOnly
 	public EmployeeResponse update(@PathVariable Long id, @Valid @RequestBody EmployeeRequest request) {
 		return employeeService.update(id, request);
 	}
@@ -93,7 +102,9 @@ public class EmployeeController {
 	// DELETE /api/employees/3 → 删除 id 为 3 的员工
 	// @ResponseStatus(HttpStatus.NO_CONTENT)：成功时返回 204 No Content（成功了，但没有内容要返回）
 	// void：没有返回值，响应体是空的
+	// @ManagerOnly：只有店长能删除员工
 	@DeleteMapping("/{id}")
+	@ManagerOnly
 	@ResponseStatus(HttpStatus.NO_CONTENT)
 	public void delete(@PathVariable Long id) {
 		employeeService.delete(id);
