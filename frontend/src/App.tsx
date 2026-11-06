@@ -39,7 +39,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { Routes, Route, Link, Navigate, useLocation, useNavigate } from 'react-router-dom';
 
 // 员工申请：侧边栏「员工」后面显示店长还没处理的申请数量
-import { pendingRequestCount, subscribeRequests } from './data/requests';
+import { pendingRequestCount, refreshRequests, resetRequests, subscribeRequests } from './data/requests';
 
 // loadEmployees：从后端拿全部员工，放进全系统共用的 employees 数组（data/employees.ts）
 import { loadEmployees } from './data/employees';
@@ -100,6 +100,22 @@ function App() {
   // 组件消失时 React 会自动调用，避免内存里留着没用的监听
   // 第二个参数 []：只在第一次显示时订阅一次
   useEffect(() => subscribeRequests(() => setPendingCount(pendingRequestCount())), []);
+
+  // 店长登录后：马上从后端拿一次申请（红色数字才有值），之后每 60 秒再拿一次
+  //   为什么要定时拿？员工是在自己的手机 / 电脑上提交的，店长这边的页面不会自动知道，
+  //   每分钟问一次后端「有没有新的」（这种做法叫「轮询」，以后可以换成 WebSocket 让后端主动推送）
+  // 员工账号不用拿：GET /api/requests 只有店长能调（员工调用会得到 403）
+  // .catch(() => {})：拿失败了（后端临时断开等）就算了，下一分钟再试，不弹错误
+  useEffect(() => {
+    if (!isManager) return;
+    refreshRequests().catch(() => {});
+    const timer = setInterval(() => refreshRequests().catch(() => {}), 60_000);
+    // 清理函数：退出登录、或者换成员工账号时，停掉定时器并把数字清零
+    return () => {
+      clearInterval(timer);
+      resetRequests();
+    };
+  }, [isManager]);
 
   // =========================
   // 启动时先从后端拿员工列表

@@ -13,12 +13,12 @@
 // - 「较上月 +2」「加班 8 小时」现在还是写死的演示数字，以后由后端统计
 // =====================================================
 
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { ComponentProps } from "react";
 import Card from "../../components/Card/Card";
 import { useNavigate } from "react-router-dom";
 import NoticePanel from "./NoticePanel";
-import { pendingRequestCount } from "../../data/requests";
+import { pendingRequestCount, subscribeRequests } from "../../data/requests";
 import "./Dashboard.css";
 import { useLanguage } from "../../i18n/LanguageContext";
 
@@ -93,6 +93,10 @@ function Dashboard() {
   const totalEmployees = employees.length;
   const scheduledToday = shiftsByEmployee.size;   // 今天上班的人数（每人只算一次）
 
+  // 未处理申请数：数字来自后端（店长登录后 App.tsx 会去拿），拿到或变化时这里跟着更新
+  const [pendingRequests, setPendingRequests] = useState(pendingRequestCount);
+  useEffect(() => subscribeRequests(() => setPendingRequests(pendingRequestCount())), []);
+
   // 每张卡片是一个对象，下面用 map 生成 <Card />（以后加卡片只要在数组里加一项）
   const cards: CardItem[] = [
     {
@@ -120,7 +124,7 @@ function Dashboard() {
       icon: EventAvailableIcon,
       tone: 'amber',
       // 未处理的员工申请数（真实数据，来自 data/requests.ts）
-      description: t.dashboard.pendingRequests(pendingRequestCount()),
+      description: t.dashboard.pendingRequests(pendingRequests),
     },
     {
       id: 4,

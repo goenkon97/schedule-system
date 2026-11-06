@@ -33,12 +33,17 @@ export default function NoticePanel() {
   useEffect(() => {
     if (!user) return;
     const load = async () => {
-      // 店长：所有未处理的；员工：自己的全部
-      const list = isManager
-        ? (await requestApi.listAll()).filter((r) => r.status === "pending")
-        : await requestApi.listMine(user.id);
-      setTotal(list.length);
-      setItems(list.slice(0, MAX_ITEMS));
+      // 店长：所有未处理的；员工：自己的全部（「我是谁」后端从通行证里读，不用传 id）
+      // try / catch：后端没连上时不让页面报错，通知栏保持原样
+      try {
+        const list = isManager
+          ? (await requestApi.listAll()).filter((r) => r.status === "pending")
+          : await requestApi.listMine();
+        setTotal(list.length);
+        setItems(list.slice(0, MAX_ITEMS));
+      } catch {
+        // 拿不到就算了，下次数据变化时会再试
+      }
     };
     load();
     return subscribeRequests(load);

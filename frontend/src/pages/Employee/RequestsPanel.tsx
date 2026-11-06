@@ -34,9 +34,16 @@ export default function RequestsPanel({ onToast }: { onToast: (msg: string) => v
 
   // 拿全部申请；数据一变（比如员工在别处提交了）就重新拿
   useEffect(() => {
-    const load = () => requestApi.listAll().then(setList);
+    // .catch：拿失败了（后端没开等）用提示条告诉店长
+    const load = () =>
+      requestApi
+        .listAll()
+        .then(setList)
+        .catch((err: unknown) => onToast(err instanceof Error ? err.message : String(err)));
     load();
     return subscribeRequests(load);   // 返回“取消订阅”，组件卸载时 React 会自动调用
+    // onToast 是父组件传进来的函数，只在第一次显示时订阅一次就够了
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // 未处理的条数（显示在筛选按钮上）
@@ -46,9 +53,14 @@ export default function RequestsPanel({ onToast }: { onToast: (msg: string) => v
 
   // 点操作按钮：未处理 ↔ 已沟通 来回切换
   // 不用手动刷新列表：setStatus 会通知订阅者，上面 useEffect 里的 load 会自动重新拿数据
+  // try / catch：后端返回错误时（比如这条申请刚被员工撤回了 → 404），显示后端的说明
   const toggle = async (r: StaffRequest) => {
-    await requestApi.setStatus(r.id, r.status === "pending" ? "done" : "pending");
-    onToast(t.requests.markedToast);
+    try {
+      await requestApi.setStatus(r.id, r.status === "pending" ? "done" : "pending");
+      onToast(t.requests.markedToast);
+    } catch (err) {
+      onToast(err instanceof Error ? err.message : String(err));
+    }
   };
 
   // 日期显示："2026-12-05" → 「12月5日(六)」，跟着当前语言

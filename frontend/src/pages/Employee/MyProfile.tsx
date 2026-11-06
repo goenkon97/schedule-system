@@ -54,10 +54,15 @@ export default function MyProfile({ user }: { user: AuthUser }) {
 
   // ---------- 我的申请 ----------
   const [mine, setMine] = useState<StaffRequest[]>([]);
-  const reload = () => requestApi.listMine(user.id).then(setMine);
+  // 「我是谁」后端从通行证里读，所以不用传 user.id
+  // .catch：拿失败了就在表单上方显示原因
+  const reload = () =>
+    requestApi
+      .listMine()
+      .then(setMine)
+      .catch((err: unknown) => setError(err instanceof Error ? err.message : String(err)));
   useEffect(() => {
     reload();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user.id]);
 
   const [toast, setToast] = useState("");
@@ -110,7 +115,14 @@ export default function MyProfile({ user }: { user: AuthUser }) {
     const start = dateMode === "none" ? null : startDate;
     const end = dateMode === "range" ? endDate : start;
 
-    await requestApi.create({ employeeId: user.id, type, startDate: start, endDate: end, note: note.trim() });
+    // try / catch：后端检查不通过（比如日期规则）或者连不上时，显示后端返回的说明，表单内容保留
+    try {
+      // 不传 employeeId：后端从通行证里知道是谁提交的
+      await requestApi.create({ type, startDate: start, endDate: end, note: note.trim() });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
+      return;
+    }
     // 发送成功：清空表单，刷新下面的列表
     setStartDate("");
     setEndDate("");
@@ -121,7 +133,14 @@ export default function MyProfile({ user }: { user: AuthUser }) {
   };
 
   const handleCancel = async (r: StaffRequest) => {
-    await requestApi.cancel(r.id);
+    // try / catch：比如店长刚好已经处理了这条（后端返回 409「不能撤回了」），把原因告诉员工并刷新列表
+    try {
+      await requestApi.cancel(r.id);
+    } catch (err) {
+      setToast(err instanceof Error ? err.message : String(err));
+      reload();
+      return;
+    }
     setToast(t.requests.cancelledToast);
     reload();
   };

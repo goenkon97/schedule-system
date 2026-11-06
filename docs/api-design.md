@@ -107,7 +107,7 @@
 例：Tom Lee 12 月 5 日上全天 → 两行（day 一行、evening 一行）。
 部门、正社员还是兼职，都能从 employees 表查出来，所以这里不重复存。
 
-### requests（员工申请）
+### staff_requests（员工申请）
 
 | 字段 | 说明 |
 | --- | --- |
@@ -121,7 +121,7 @@
 
 ---
 
-## 3. 接口清单（共 14 个）
+## 3. 接口清单（共 15 个）
 
 权限说明：**公开** = 不用登录；**登录** = 店长、员工都可以；**店长** = 只有店长。
 
@@ -175,14 +175,17 @@
 
 草稿还是存在浏览器里，只有点「提交」才调接口 9。
 
-### 3.4 员工申请（4 个）
+### 3.4 员工申请（5 个）
 
 | # | 方法 | 地址 | 权限 | 做什么 |
 | --- | --- | --- | --- | --- |
-| 11 | GET | `/api/requests` | 登录 | 店长：全部申请；员工：后端只返回他自己的 |
-| 12 | POST | `/api/requests` | 登录 | 员工提交申请（employeeId 由后端从 token 里取，不信前端传的） |
-| 13 | PATCH | `/api/requests/{id}` | 店长 | 改状态：`{ "status": "done" }` |
-| 14 | DELETE | `/api/requests/{id}` | 登录 | 撤回：只能撤回**自己的**、**还没处理的** |
+| 11 | GET | `/api/requests/mine` | 登录 | 员工看自己的申请（「我是谁」从 token 里取，所以不用 `?employeeId=`，改不了别人的） |
+| 12 | GET | `/api/requests` | 店长 | 店长看全部申请 |
+| 13 | POST | `/api/requests` | 登录 | 员工提交申请（employeeId 由后端从 token 里取，不信前端传的） |
+| 14 | PATCH | `/api/requests/{id}/status` | 店长 | 改状态：`{ "status": "done" }` |
+| 15 | DELETE | `/api/requests/{id}` | 登录 | 撤回：只能撤回**自己的**（否则 403）、**还没处理的**（否则 409） |
+
+实现：`backend/.../request/` 包（StaffRequest、StaffRequestRepository、DTO、StaffRequestService、StaffRequestController、RequestSeeder）。
 
 ---
 
