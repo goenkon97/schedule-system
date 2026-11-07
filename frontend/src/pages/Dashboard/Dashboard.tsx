@@ -16,7 +16,6 @@
 import { useEffect, useMemo, useState } from "react";
 import type { ComponentProps } from "react";
 import Card from "../../components/Card/Card";
-import { useNavigate } from "react-router-dom";
 import NoticePanel from "./NoticePanel";
 import { pendingRequestCount, subscribeRequests } from "../../data/requests";
 import "./Dashboard.css";
@@ -52,7 +51,6 @@ type CardItem = ComponentProps<typeof Card> & { id: number };
 function Dashboard() {
   // 当前语言的翻译
   const { t } = useLanguage();
-  const navigate = useNavigate();
 
   // ---------------------------------------------------
   // 今天的排班：从后端拿「这个月已提交的班表」，取出今天那一天
@@ -285,11 +283,6 @@ function Dashboard() {
 
           </Table>
         </TableContainer>
-
-        {/* 点击跳到排班页 */}
-        <div className="scheduleFooter" onClick={() => navigate("/schedule")}>
-          {t.dashboard.viewFull}
-        </div>
 
       </div>
 

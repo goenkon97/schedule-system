@@ -87,18 +87,6 @@
     color: #9ca3af;
 }
 
-.scheduleFooter {
-    padding: 18px;
-    text-align: center;
-    border-top: 1px solid #eef0f3;
-    color: #2563eb;
-    font-weight: 600;
-    cursor: pointer;
-}
-
-.scheduleFooter:hover {
-    background: #f8faff;
-}
 /* 表头里时间下方的班次名小字（例：10:00 下面的「白班」） */
 .shiftColumnName {
     display: block;

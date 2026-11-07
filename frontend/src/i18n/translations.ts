@@ -119,7 +119,6 @@ const en = {
     hours: "h",
     todayOverview: "Today's Schedule Overview",
     employee: "Employee",
-    viewFull: "View Full Schedule →",
     noShiftToday: "No one is scheduled today.",
     // 通知小模块
     noticeTitle: "Staff notifications",
@@ -481,7 +480,6 @@ const zh: Dictionary = {
     hours: "小时",
     todayOverview: "今日排班概览",
     employee: "员工",
-    viewFull: "查看完整排班 →",
     noShiftToday: "今天没有人排班。",
     noticeTitle: "员工通知",
     noticeEmpty: "没有新的通知。",
@@ -821,7 +819,6 @@ const ja: Dictionary = {
     hours: "時間",
     todayOverview: "本日のシフト概要",
     employee: "従業員",
-    viewFull: "シフト表をすべて見る →",
     noShiftToday: "本日はシフトがありません。",
     noticeTitle: "従業員からの通知",
     noticeEmpty: "新しい通知はありません。",
