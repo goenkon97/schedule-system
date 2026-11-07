@@ -27,7 +27,7 @@ import { employees } from "../../data/employees";
 import { shiftDefinitions, shiftTimeLabel, departments } from "../../data/shifts";
 import { toDateKey } from "../../data/mockSchedule";
 // 班表：直接读排班页保存的同一份数据（以后两边一起换成接口）
-import { loadSchedules, monthFromToday, monthKey } from "../../data/scheduleStore";
+import { monthFromToday, monthKey, scheduleApi, type MonthSchedule } from "../../data/scheduleStore";
 import type { ShiftType } from "../../i18n/translations";
 
 // ---------- MUI 表格组件 ----------
@@ -55,15 +55,23 @@ function Dashboard() {
   const navigate = useNavigate();
 
   // ---------------------------------------------------
-  // 今天的排班：从排班页保存的「这个月的班表」里，取出今天那一天
-  // 以后换成接口：GET /api/schedules/2026-11 → 取今天
+  // 今天的排班：从后端拿「这个月已提交的班表」，取出今天那一天
+  //   GET /api/schedules?from=2026-11&to=2026-11（只要这一个月）
   // ---------------------------------------------------
   const today = new Date();
   const todayKey = toDateKey(today);
   const { year, month } = monthFromToday(0);
 
-  // useMemo：只在第一次渲染时读一次
-  const monthSchedule = useMemo(() => loadSchedules()[monthKey(year, month)], [year, month]);
+  // 还没拿到（或者这个月还没提交班表）时是 undefined，下面的统计都会显示 0
+  const [monthSchedule, setMonthSchedule] = useState<MonthSchedule | undefined>(undefined);
+  useEffect(() => {
+    const key = monthKey(year, month);
+    scheduleApi
+      .list(key, key)
+      .then((list) => setMonthSchedule(list[0]))
+      // 拿失败了（后端临时断开等）：首页照样显示，只是今日排班为空
+      .catch(() => setMonthSchedule(undefined));
+  }, [year, month]);
   const todayEntry = monthSchedule?.days.find((d) => d.date === todayKey);
 
   // 今天每个人上哪几个班：员工 id → 班次集合（白班 / 晚班）

@@ -10,8 +10,10 @@
 // - 「新建排班」只有店长能用，而且只能选下个月和下下个月
 //
 // 数据怎么流动：
+//   打开页面 → 先显示浏览器里存的（loadSchedules）→ 向后端要这三个月（scheduleApi.list）→ 合并
 //   schedules（state，所有月份的班表）
-//     → 一改就自动存进 localStorage（saveSchedules）
+//     → 一改就自动存进 localStorage（saveSchedules），草稿只存在浏览器里
+//     → 点「提交」才发给后端（PUT /api/schedules/2026-12）
 //     → current = schedules["2026-12"]，月历只画 current
 //   弹窗（新建 / 某一天）只负责编辑，改完通过 onGenerate / onSave 把结果交回这里，
 //   由这个页面统一更新 schedules —— 数据只有一个地方管，不会乱
@@ -39,10 +41,12 @@ import type { FullTimeSettings, ScheduleResult } from "../../data/fullTimeSchedu
 import {
   buildMonthSchedule,
   loadSchedules,
-  mockApi,
+  mergeServerSchedules,
   monthFromToday,
   monthKey,
   saveSchedules,
+  scheduleApi,
+  seedCurrentMonthIfNeeded,
   workingIds,
   type DayEntry,
   type ShiftStaff,
@@ -80,10 +84,13 @@ function Schedule() {
   // 只有店长能新建、修改、提交
   const canEdit = user?.role === "manager";
 
-  // ---------- 所有月份的班表（现在存在浏览器里，以后从后端拉）----------
+  // ---------- 所有月份的班表：先用浏览器里存的显示，后端的数据回来后再合并 ----------
   const [schedules, setSchedules] = useState<ScheduleMap>(loadSchedules);
   // useEffect(做什么, [依赖])：依赖 schedules 每变一次，就执行一次保存 → 一改就存
   useEffect(() => saveSchedules(schedules), [schedules]);   // 一改就存
+
+  // 后端里「已提交」的版本：清除草稿时要恢复成它
+  const [serverSchedules, setServerSchedules] = useState<ScheduleMap>({});
 
   // 现在看的是第几个月：0 = 当前月，1 = 下个月，2 = 下下个月
   const [offset, setOffset] = useState(0);
@@ -97,6 +104,39 @@ function Schedule() {
   const [dept, setDept] = useState<DeptFilter>("all");                 // 部门筛选
   const [toast, setToast] = useState("");                              // 底部提示条的文字（空 = 不显示）
   const [confirmClear, setConfirmClear] = useState(false);   // 「清除班表」的确认框
+
+  // ---------------------------------------------------
+  // 打开页面时：向后端要「这个月、下个月、下下个月」已提交的班表，合并进页面
+  //   店长：保留浏览器里没提交的草稿；员工：只看后端的
+  //   店长第一次打开、后端还没有这个月的班表时，自动生成一份演示用的并提交
+  // cancelled：请求还没回来用户就离开了这个页面，回来的结果就不要了（避免改已经消失的页面的 state）
+  // ---------------------------------------------------
+  useEffect(() => {
+    const keys = [0, 1, 2].map((o) => {
+      const m = monthFromToday(o);
+      return monthKey(m.year, m.month);
+    });
+    let cancelled = false;
+    (async () => {
+      try {
+        const list = await scheduleApi.list(keys[0], keys[2]);
+        // 数组 → { "2026-11": {...}, "2026-12": {...} }
+        const server: ScheduleMap = Object.fromEntries(list.map((s) => [s.id, s]));
+        if (canEdit) {
+          const seeded = await seedCurrentMonthIfNeeded(server);
+          if (seeded) server[seeded.id] = seeded;
+        }
+        if (cancelled) return;
+        setServerSchedules(server);
+        setSchedules((prev) => mergeServerSchedules(prev, server, keys, canEdit));
+      } catch (err) {
+        if (!cancelled) setToast(err instanceof Error ? err.message : String(err));
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [canEdit]);
 
   // 月份标题：en → "December 2026"，zh / ja → "2026年12月"
   const monthTitle = new Date(year, month - 1, 1).toLocaleString(locale, { year: "numeric", month: "long" });
@@ -126,22 +166,26 @@ function Schedule() {
   // 修改备注
   const changeNote = (note: string) => updateCurrent((s) => ({ ...s, note }));
 
-  // 提交班表：以后这里换成 fetch("/api/schedules", { method: "POST", body: JSON.stringify(current) })
-  const submit = () => {
+  // 提交班表：PUT /api/schedules/2026-12
+  //   成功 → 后端返回存好的版本（status = submitted），页面和「后端版本」都换成它
+  //   失败 → 后端检查没通过（比如某天有人被排了两次），显示后端的说明，草稿保留不动
+  const submit = async () => {
     if (!current) return;
-    // as const：让 TypeScript 把 "submitted" 当成字面量类型，而不是普通 string
-    const payload = { ...current, status: "submitted" as const, updatedAt: new Date().toISOString() };
-    console.log("Submit schedule →", payload);              // 提交给后端的就是这个对象
-    mockApi.submit(payload);                                 // 模拟接口：存进「后台」
-    setSchedules((prev) => ({ ...prev, [key]: payload }));
-    setToast(t.schedule.submittedToast);
+    try {
+      const saved = await scheduleApi.submit(current);
+      setServerSchedules((prev) => ({ ...prev, [key]: saved }));
+      setSchedules((prev) => ({ ...prev, [key]: saved }));
+      setToast(t.schedule.submittedToast);
+    } catch (err) {
+      setToast(err instanceof Error ? err.message : String(err));
+    }
   };
 
   // 清除班表：
   //   - 草稿（没提交）：只清除本地的修改。后台有提交过的版本 → 恢复成那个版本；没有 → 这个月变成空的
   //   - 已提交：调用删除接口，把后台里这个月的班表删掉，本地也一起删掉
-  const serverCopy = current ? mockApi.get(key) : undefined;
-  const clearSchedule = () => {
+  const serverCopy = current ? serverSchedules[key] : undefined;
+  const clearSchedule = async () => {
     if (!current) return;
     if (current.status === "draft") {
       setSchedules((prev) => {
@@ -152,12 +196,22 @@ function Schedule() {
       });
       setToast(t.schedule.clearedLocal);
     } else {
-      mockApi.remove(key);                                    // 以后换成 DELETE /api/schedules/2026-11
-      setSchedules((prev) => {
+      // DELETE /api/schedules/2026-11；失败就显示原因，页面不变
+      try {
+        await scheduleApi.remove(key);
+      } catch (err) {
+        setToast(err instanceof Error ? err.message : String(err));
+        setConfirmClear(false);
+        return;
+      }
+      // 页面和「后端版本」里都删掉这个月
+      const without = (prev: ScheduleMap) => {
         const next = { ...prev };
         delete next[key];
         return next;
-      });
+      };
+      setSchedules(without);
+      setServerSchedules(without);
       setToast(t.schedule.clearedServer);
     }
     setConfirmClear(false);

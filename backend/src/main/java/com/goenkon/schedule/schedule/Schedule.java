@@ -47,6 +47,8 @@ import jakarta.persistence.OneToMany;
 import jakarta.persistence.OrderBy;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
+// 【新】Version：版本号（乐观锁），见下面 version 字段的说明
+import jakarta.persistence.Version;
 
 @Entity
 // 表名：schedules
@@ -109,6 +111,19 @@ public class Schedule {
 	@OrderBy("workDate ASC, id ASC")
 	// = new ArrayList<>()：一开始就是一个空列表，不是 null，后面直接 add 不会报 NullPointerException
 	private List<ScheduleAssignment> assignments = new ArrayList<>();
+
+	// ---------- 版本号（@Version，乐观锁）----------
+	// 每次 UPDATE 这一行，Hibernate 自动把 version + 1，并且 UPDATE 时会带上条件「WHERE version = 我读到的那个值」。
+	// 两个店长同时打开、同时提交同一个月：先提交的成功（version 0 → 1），
+	// 后提交的那个手上还是 version 0，条件对不上 → 更新失败，不会悄悄把别人的修改覆盖掉。
+	// 就像共享文档的「别人已经修改过，请刷新后再改」。叫「乐观」锁：先假设不会撞车，真撞了再报错。
+	//
+	// 还有一个作用：我们的主键 "2026-12" 是自己给的（不是数据库自增），
+	// Spring Data 的 save() 本来分不清「这是新的还是已有的」（主键一开始就不是 null），
+	// 有了 version 字段，它就看 version 是不是 null：null = 新的 → INSERT；有值 = 已有的 → UPDATE
+	// Long（大写）：可以是 null —— 新建的对象还没有版本号
+	@Version
+	private Long version;
 
 	// ---------- 创建时间 / 修改时间 ----------
 	@Column(nullable = false, updatable = false)

@@ -29,7 +29,7 @@
 | 假登录 `DEMO_ACCOUNTS` | `src/auth/AuthProvider.tsx` | `/api/auth/*` |
 | `employeeApi` | `src/data/employees.ts` | `/api/employees` |
 | `requestApi` | `src/data/requests.ts` | `/api/requests` |
-| `mockApi`（班表提交 / 删除） | `src/data/scheduleStore.ts` | `/api/schedules` |
+| `scheduleApi`（班表查询 / 提交 / 删除） | `src/data/scheduleStore.ts` | `/api/schedules` |
 
 ---
 
@@ -85,27 +85,32 @@
 
 | 字段 | 说明 |
 | --- | --- |
-| id | 主键 |
-| month_key | `"2026-12"`，唯一（一个月只有一份） |
+| id | 主键，直接用 `"2026-12"`（一个月只有一份，年月本身就唯一） |
+| year / month | 年、月（数字） |
 | name | `"2026年12月 班表"` |
-| note | 备注 |
+| note | 月备注（最多 200 字） |
 | kitchen_per_day / hall_per_day | 每天几个正社员（新建时店长设的） |
-| updated_at | 最后提交时间 |
+| version | 乐观锁版本号（两个人同时提交同一个月时，后提交的会失败，不会悄悄覆盖） |
+| created_at / updated_at | 创建、最后提交时间 |
 
-### schedule_assignments（班表里“谁、哪天、上什么班”）
+没有 status 列：草稿只存在浏览器里，数据库里的一定是「已提交」。
+
+### schedule_assignments（班表里“谁、哪天、哪一组、上什么班”）
 
 前端的 `days[]` 是嵌套结构，存数据库要“拍平”成一行一条：
 
 | 字段 | 说明 |
 | --- | --- |
-| id | 主键 |
+| id | 主键（自增） |
 | schedule_id | 属于哪份班表（外键 → schedules.id） |
 | work_date | `2026-12-05` |
-| employee_id | 谁（外键 → employees.id） |
+| slot | 放在哪个格子：`kitchen`（厨房正社员）/ `hall`（服务员正社员）/ `partTime`（兼职） |
 | shift | `day` / `evening` |
+| employee_id | 谁（外键 → employees.id） |
 
-例：Tom Lee 12 月 5 日上全天 → 两行（day 一行、evening 一行）。
-部门、正社员还是兼职，都能从 employees 表查出来，所以这里不重复存。
+例：Tom Lee（厨房正社员）12 月 5 日上全天 → 两行（kitchen + day 一行、kitchen + evening 一行）。
+slot 要单独存：前端是按格子放人的，取出来组装时要知道放回哪个格子（兼职也不是一个部门）。
+索引：(employee_id, work_date)，方便以后查「某人这个月上了哪几天」。
 
 ### staff_requests（员工申请）
 
@@ -166,12 +171,14 @@
 
 | # | 方法 | 地址 | 权限 | 做什么 |
 | --- | --- | --- | --- | --- |
-| 8 | GET | `/api/schedules/{monthKey}` | 登录 | 取某个月已提交的班表（`/api/schedules/2026-12`），没有返回 404 |
+| 8 | GET | `/api/schedules?from=2026-11&to=2027-01` | 登录 | 取这几个月已提交的班表（没提交过的月份不在结果里，不会 404） |
 | 9 | PUT | `/api/schedules/{monthKey}` | 店长 | 提交班表（没有就新建，有就整份覆盖） |
 | 10 | DELETE | `/api/schedules/{monthKey}` | 店长 | 删除这个月的班表 |
 
 请求 / 响应的格式就是前端现在的 `MonthSchedule`（一个月一个对象，里面有 `days[]`）。
-后端收到后拍平存进 schedule_assignments，取的时候再组装回去。
+后端收到后先检查（天数和日期、员工存在且未删除、格子和员工类型对得上、同一个班不重复），
+再拍平存进 schedule_assignments；取的时候再组装回去。
+「每人每周最多 4 天」只是自动排班的规则，店长手动调整可以超过，所以后端不拦。
 
 草稿还是存在浏览器里，只有点「提交」才调接口 9。
 

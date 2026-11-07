@@ -2,16 +2,17 @@
 // =====================================================
 // 班表数据（一个月 = 一个对象）
 //
-// 这就是以后前后端之间传的数据格式：
-//   提交班表 → POST /api/schedules   body = 一个 MonthSchedule
-//   查看班表 → GET  /api/schedules?month=2026-12 → 返回一个 MonthSchedule
-//
-// 现在后端还没写，所以用浏览器的 localStorage 模拟两个地方：
-//   - 本地（STORAGE_KEY）：页面上正在看 / 正在改的班表，包括还没提交的草稿
-//   - 后台（SERVER_KEY）：「提交」之后的班表，相当于数据库里的数据，由 mockApi 读写
-// 以后只要把 mockApi 里的几个函数换成 fetch 调真正的接口，页面代码不用改。
+// 两个地方存班表：
+//   - 浏览器（localStorage，STORAGE_KEY）：页面上正在看 / 正在改的班表，包括还没提交的草稿
+//   - 后端（MySQL）：店长点「提交」之后的班表。员工、首页看到的都是这一份
+//       GET    /api/schedules?from=2026-11&to=2027-01   查几个月
+//       PUT    /api/schedules/2026-12                   提交（整月覆盖）
+//       DELETE /api/schedules/2026-12                   删除
+//   后端把班表拍平存成一行一行（schedules + schedule_assignments 两张表），
+//   返回时再组装回下面这个 MonthSchedule 的样子，所以页面代码不用关心数据库长什么样
 // =====================================================
 
+import { apiFetch } from "../api/http";
 import type { ShiftType } from "../i18n/translations";
 import {
   DEFAULT_SETTINGS,
@@ -110,8 +111,8 @@ const STORAGE_KEY = "schedule-system-schedules";
 export type ScheduleMap = Record<string, MonthSchedule>;
 
 // ---------------------------------------------------
-// 读出所有班表（排班页、首页打开时调用）
-// 步骤：读 localStorage → 兼容旧格式 → 第一次打开时放一份演示用的本月班表
+// 读出浏览器里存的班表（排班页打开时先用它显示，等后端的数据回来再合并）
+// 步骤：读 localStorage → 兼容旧格式
 // ---------------------------------------------------
 export function loadSchedules(): ScheduleMap {
   let map: ScheduleMap = {};
@@ -132,72 +133,79 @@ export function loadSchedules(): ScheduleMap {
     });
   }
 
-  // 演示用：这个月如果还没有班表，就当作「上个月已经排好并提交了」，自动生成一份
-  // （第一次打开时才放；之后被店长清除了就不再自动生成，这样「清除」才看得到效果）
-  const SEEDED_KEY = "schedule-system-seeded";
-  const { year, month } = monthFromToday(0);
-  const key = monthKey(year, month);
-  let seeded = false;
-  try { seeded = localStorage.getItem(SEEDED_KEY) === key; } catch { /* 忽略 */ }
-  // 已经有这个月的班表（以前打开过）：也记成「放过了」，清除后刷新不会又冒出来
-  if (map[key] && !seeded) {
-    try { localStorage.setItem(SEEDED_KEY, key); } catch { /* 忽略 */ }
-    seeded = true;
-  }
-  if (!map[key] && !seeded) {
-    map[key] = buildMonthSchedule(
-      year, month, DEFAULT_SETTINGS,
-      generateFullTimeSchedule(year, month - 1, DEFAULT_SETTINGS),
-      "", "submitted"
-    );
-    mockApi.submit(map[key]);              // 「已提交」的班表，后台里也要有一份
-    try { localStorage.setItem(SEEDED_KEY, key); } catch { /* 忽略 */ }
-  }
   return map;
 }
 
-// ---------- 模拟的后台接口 ----------
-// 以后分别换成：
-//   submit → fetch("/api/schedules", { method: "POST", body: JSON.stringify(s) })
-//   remove → fetch(`/api/schedules/${id}`, { method: "DELETE" })
-//   get    → fetch(`/api/schedules/${id}`)
-const SERVER_KEY = "schedule-system-server";
-
-function readServer(): ScheduleMap {
-  try {
-    return JSON.parse(localStorage.getItem(SERVER_KEY) || "{}") as ScheduleMap;
-  } catch {
-    return {};
-  }
-}
-
-function writeServer(map: ScheduleMap) {
-  try {
-    localStorage.setItem(SERVER_KEY, JSON.stringify(map));
-  } catch {
-    // 忽略
-  }
-}
-
-// 现在三个函数都是同步的；换成 fetch 后会变成 async（返回 Promise），调用的地方要加 await
-export const mockApi = {
-  // 提交一个月的班表（同一个月再提交就覆盖）
-  submit(s: MonthSchedule) {
-    const server = readServer();
-    server[s.id] = s;
-    writeServer(server);
+// ---------- 后端接口 ----------
+// 失败时 apiFetch 会抛出 ApiError（message 是后端返回的说明，比如「12-05 的白班里，Alice 被安排了两次」）
+export const scheduleApi = {
+  // 查 from ~ to 这几个月（都是 "2026-12" 这种格式）；没提交过的月份不在结果里
+  async list(from: string, to: string): Promise<MonthSchedule[]> {
+    return apiFetch<MonthSchedule[]>(`/api/schedules?from=${from}&to=${to}`);
   },
-  // 删除后台里某个月的班表
-  remove(id: string) {
-    const server = readServer();
-    delete server[id];
-    writeServer(server);
+
+  // 提交一个月（同一个月再提交就覆盖）。只发后端需要的字段：
+  //   是哪个月写在网址里；status、updatedAt 由后端决定
+  async submit(s: MonthSchedule): Promise<MonthSchedule> {
+    return apiFetch<MonthSchedule>(`/api/schedules/${s.id}`, {
+      method: "PUT",
+      body: { name: s.name, note: s.note, settings: s.settings, days: s.days },
+    });
   },
-  // 读后台里某个月的班表（没有就是 undefined）
-  get(id: string): MonthSchedule | undefined {
-    return readServer()[id];
+
+  // 删除某个月（成功时后端返回 204，没有内容）
+  async remove(id: string): Promise<void> {
+    await apiFetch<void>(`/api/schedules/${id}`, { method: "DELETE" });
   },
 };
+
+// ---------------------------------------------------
+// 把后端拿到的班表合并进浏览器里的班表
+//   keys：这次向后端查了哪几个月
+//   keepDrafts：要不要保留浏览器里的草稿（店长 = 要；员工不能改班表，只看后端的）
+// 每个月：
+//   浏览器里是草稿，而且要保留 → 用草稿（店长还没改完）
+//   否则后端有 → 用后端的（最新提交的版本）
+//   后端没有 → 删掉（可能已经被别的设备删除了）
+// ---------------------------------------------------
+export function mergeServerSchedules(
+  local: ScheduleMap,
+  server: ScheduleMap,
+  keys: string[],
+  keepDrafts: boolean,
+): ScheduleMap {
+  const next = { ...local };
+  for (const key of keys) {
+    if (keepDrafts && local[key]?.status === "draft") continue;
+    if (server[key]) next[key] = server[key];
+    else delete next[key];
+  }
+  return next;
+}
+
+// ---------------------------------------------------
+// 演示用：店长第一次打开时，如果后端还没有「这个月」的班表，自动生成一份并提交
+// （当作「上个月已经排好了」，招聘方一登录就能看到月历和首页的数据）
+// 每个浏览器只做一次：之后被店长清除了就不再自动生成，这样「清除」才看得到效果
+// 返回新提交的班表；不需要生成时返回 null
+// ---------------------------------------------------
+// （名字和以前 localStorage 版本用的不一样：以前的标记是「浏览器里放过」，现在要的是「后端里放过」，所以换个名字重新算一次）
+const SEEDED_KEY = "schedule-system-seeded-server";
+
+export async function seedCurrentMonthIfNeeded(server: ScheduleMap): Promise<MonthSchedule | null> {
+  const { year, month } = monthFromToday(0);
+  const key = monthKey(year, month);
+  if (server[key]) return null;
+  let seeded = false;
+  try { seeded = localStorage.getItem(SEEDED_KEY) === key; } catch { /* 忽略 */ }
+  if (seeded) return null;
+  try { localStorage.setItem(SEEDED_KEY, key); } catch { /* 忽略 */ }
+  const draft = buildMonthSchedule(
+    year, month, DEFAULT_SETTINGS,
+    generateFullTimeSchedule(year, month - 1, DEFAULT_SETTINGS),
+  );
+  return scheduleApi.submit(draft);
+}
 
 // 保存所有班表到「本地」（包括草稿）；排班页每次改动后自动调用
 export function saveSchedules(map: ScheduleMap) {
