@@ -169,6 +169,18 @@
 			<scope>runtime</scope>
 		</dependency>
 
+		<!-- H2 驱动 + H2 数据库本身：一个用 Java 写的小数据库，可以直接开在程序的「内存」里。
+		     只在「演示模式」（demo）用：上线到免费的 Render 时没有 MySQL 可连，就用它代替。
+		     内存数据库的特点：程序一停，数据就没了；下次启动时各个 Seeder 会重新放好演示数据
+		     —— 对作品集来说反而是好事：招聘方怎么乱改，重启后都会恢复原样。
+		     scope 是 runtime：和 MySQL 驱动一样，代码里不会直接用到它的类，只有运行时连数据库才用。
+		     版本号不用写，由 Spring Boot 的父 POM 统一管理。 -->
+		<dependency>
+			<groupId>com.h2database</groupId>
+			<artifactId>h2</artifactId>
+			<scope>runtime</scope>
+		</dependency>
+
 		<!-- 下面三个是对应的「测试工具包」，只在跑测试时用（scope = test），不会打包进上线的 jar：
 		     JUnit（写测试的框架）、AssertJ（断言）、MockMvc（不用真开服务器也能模拟发 HTTP 请求）等。
 		     Spring Boot 4 把测试依赖按模块拆开了，所以每个功能各有一个 -test -->

@@ -1,0 +1,9 @@
+# .dockerignore：做镜像时「不要拷进去」的文件（和 .gitignore 一个意思）
+# target：本地编译出来的东西，镜像里会重新编译，不需要，而且可能很大
+target/
+# 编辑器（IntelliJ、VS Code）自己的设置文件
+.idea/
+*.iml
+.vscode/
+# Spring 生成项目时附带的说明文件，用不上
+HELP.md
