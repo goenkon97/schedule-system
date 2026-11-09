@@ -85,9 +85,17 @@ function Schedule() {
   const canEdit = user?.role === "manager";
 
   // ---------- 所有月份的班表：先用浏览器里存的显示，后端的数据回来后再合并 ----------
-  const [schedules, setSchedules] = useState<ScheduleMap>(loadSchedules);
+  // 页面上显示的所有班表
+  //   店长：先拿浏览器里存的（里面有没提交的草稿），再和后端的合并
+  //   员工：从空的开始，只显示后端「已提交」的班表 —— 员工不能看草稿，也不能碰浏览器里店长存的草稿
+  //   （同一台电脑上店长、员工轮流登录时，浏览器里那份草稿是共用的；以前员工一打开排班页就会把它覆盖掉）
+  //   useState(() => ...)：传一个函数，只在第一次显示页面时执行一次（不然每次重新渲染都要读一遍 localStorage）
+  const [schedules, setSchedules] = useState<ScheduleMap>(() => (canEdit ? loadSchedules() : {}));
   // useEffect(做什么, [依赖])：依赖 schedules 每变一次，就执行一次保存 → 一改就存
-  useEffect(() => saveSchedules(schedules), [schedules]);   // 一改就存
+  // 一改就存进浏览器 —— 只有店长才存；员工的页面只用来看，什么都不写回去
+  useEffect(() => {
+    if (canEdit) saveSchedules(schedules);
+  }, [schedules, canEdit]);
 
   // 后端里「已提交」的版本：清除草稿时要恢复成它
   const [serverSchedules, setServerSchedules] = useState<ScheduleMap>({});
@@ -128,7 +136,8 @@ function Schedule() {
         }
         if (cancelled) return;
         setServerSchedules(server);
-        setSchedules((prev) => mergeServerSchedules(prev, server, keys, canEdit));
+        // 店长：保留草稿，其余换成后端的；员工：直接用后端的（只有已提交的）
+        setSchedules((prev) => (canEdit ? mergeServerSchedules(prev, server, keys, true) : server));
       } catch (err) {
         if (!cancelled) setToast(err instanceof Error ? err.message : String(err));
       }
@@ -149,8 +158,9 @@ function Schedule() {
   // ---------- 修改班表的几个动作（都会把班表变成「草稿」，等店长提交）----------
   // patch：一个函数，接收旧班表、返回新班表；这里统一把状态改成 draft、更新修改时间
   // NonNullable<typeof current>：current 的类型去掉 undefined（传进来时一定有班表）
+  // 员工不能改：按钮虽然已经藏起来了，这里再挡一次（双保险，以后有人加了新按钮忘了判断也不会出事）
   const updateCurrent = (patch: (s: NonNullable<typeof current>) => NonNullable<typeof current>) =>
-    setSchedules((prev) => {
+    canEdit && setSchedules((prev) => {
       const s = prev[key];
       if (!s) return prev;
       return { ...prev, [key]: { ...patch(s), status: "draft", updatedAt: new Date().toISOString() } };
@@ -170,7 +180,7 @@ function Schedule() {
   //   成功 → 后端返回存好的版本（status = submitted），页面和「后端版本」都换成它
   //   失败 → 后端检查没通过（比如某天有人被排了两次），显示后端的说明，草稿保留不动
   const submit = async () => {
-    if (!current) return;
+    if (!canEdit || !current) return;   // 员工不能提交（后端也会拦：PUT 接口是 @ManagerOnly）
     try {
       const saved = await scheduleApi.submit(current);
       setServerSchedules((prev) => ({ ...prev, [key]: saved }));
@@ -186,7 +196,7 @@ function Schedule() {
   //   - 已提交：调用删除接口，把后台里这个月的班表删掉，本地也一起删掉
   const serverCopy = current ? serverSchedules[key] : undefined;
   const clearSchedule = async () => {
-    if (!current) return;
+    if (!canEdit || !current) return;   // 员工不能清除（后端的 DELETE 接口同样是 @ManagerOnly）
     if (current.status === "draft") {
       setSchedules((prev) => {
         const next = { ...prev };
@@ -219,6 +229,7 @@ function Schedule() {
 
   // 新建排班：弹窗确认后，把算好的结果变成一个月的班表对象，并切换到那个月
   const handleGenerate = (data: GenerateScheduleData) => {
+    if (!canEdit) return;               // 员工不能新建排班
     const s = buildMonthSchedule(data.year, data.month, { kitchenPerDay: data.kitchenPerDay, hallPerDay: data.hallPerDay }, data.result);
     setSchedules((prev) => ({ ...prev, [s.id]: s }));
     // 算出这个月是从今天往后第几个月，切过去
