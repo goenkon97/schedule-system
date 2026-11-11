@@ -16,7 +16,7 @@ Built with **React + TypeScript** on the front end and **Java 21 + Spring Boot**
 | Staff | `staff@demo.com` | `demo1234` |
 
 - The demo back end uses an in-memory database. All data resets to the sample data whenever the server restarts, so feel free to add, edit or delete anything.
-- The back end runs on Render's free plan. If it has been idle, the first request can take 30–60 seconds while it wakes up.
+- The back end runs on Render's free plan, which sleeps after a period of no traffic. A scheduled job pings it every 10 minutes to keep it awake; if that ping ever stops, the first request can take 30–60 seconds while the back end starts up again.
 
 ## Features
 
@@ -52,11 +52,11 @@ flowchart LR
   B[Browser] -->|schedule.goenkon.com| V[Vercel<br/>React static files]
   V -->|"/api/* rewrite (vercel.json)"| R[Render<br/>Spring Boot in Docker]
   R --> D[(H2 in-memory DB<br/>demo profile)]
-  C[cron-job.org<br/>every 10 min] -->|/api/hello| R
+  C[Scheduled ping<br/>every 10 min] -->|/api/hello| R
 ```
 
 - The front end only calls relative paths (`/api/...`). Locally the Vite dev server proxies them to `localhost:8080`; online, Vercel rewrites them to Render. The browser only ever talks to one origin, so no CORS setup is needed.
-- A scheduled ping keeps the free Render instance from sleeping.
+- An external scheduled job calls the health-check endpoint `/api/hello` every 10 minutes, so the free Render instance never sits idle long enough to sleep. (`/api/hello` is excluded from login checks for this reason.)
 
 ## Design highlights
 
